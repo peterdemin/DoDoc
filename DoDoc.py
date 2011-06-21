@@ -30,10 +30,12 @@ def convert(input_filename, output_filename):
     desktop = unosvcmgr.createInstanceWithContext('com.sun.star.frame.Desktop', unocontext)
     config = unosvcmgr.createInstanceWithContext('com.sun.star.configuration.ConfigurationProvider', unocontext)
 
-    #print 'desktop:', type(desktop)
-    #print u', '.join(dir(desktop))
-    #print 'config:', type(config)
-    #print u', '.join(dir(config))
+    print 'unosvcmgr:', type(unosvcmgr)
+    print u', '.join(dir(unosvcmgr))
+    print 'desktop:', type(desktop)
+    print u', '.join(dir(desktop))
+    print 'config:', type(config)
+    print u', '.join(dir(config))
 
     document = Document(input_filename)
     document.delete_on_close = False
@@ -45,11 +47,10 @@ def convert(input_filename, output_filename):
         PropertyValue('InputStream', 0, instream, 0),
     ]
     del document
-
+    
     doc = desktop.loadComponentFromURL('private:stream','_blank',0, tuple(inputprops))
 
-    pprint(dir(doc))
-    pprint(dir(doc.getPropertyStates('FilterName')))
+    return
 
     fd = open(output_filename, 'wb')
     filter_name = 'writer_pdf_Export'
