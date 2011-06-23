@@ -2,6 +2,7 @@ from import_uno import uno
 #import uno
 import unohelper
 import os
+import hashlib
 from pprint import pprint
 
 from com.sun.star.io import IOException, XOutputStream, XSeekable, XInputStream
@@ -11,7 +12,7 @@ from OpenOffice_document import InputStream
 from OpenOffice_document import OutputStream
 from OpenOffice_document import Document
 
-def convert(input_filename, output_filename):
+def convertODG(input_filename, output_filename):
     OOO_CONNECTION = 'socket,host=localhost,port=2002;urp;StarOffice.ComponentContext'
     context = uno.getComponentContext()
     resolver = context.ServiceManager.createInstanceWithContext('com.sun.star.bridge.UnoUrlResolver', context)
@@ -24,7 +25,6 @@ def convert(input_filename, output_filename):
     document = Document(input_filename)
     document.delete_on_close = False
     instream = InputStream(uno.ByteSequence(document.read()))
-    del document
     inputprops = [ PropertyValue('InputStream', 0, instream, 0) ]
     document.close()
     doc = desktop.loadComponentFromURL('private:stream','_blank',0, tuple(inputprops))
@@ -32,9 +32,12 @@ def convert(input_filename, output_filename):
     doc_controller = doc.getCurrentController()
     draw_pages = doc.getDrawPages()
     pages_amount  = draw_pages.getCount()
+
+    created_files = []
+
     for page_id in range(pages_amount):
         noext, ext = os.path.splitext(output_filename)
-        cur_output_filename = u'%s_%d%s' % (noext, page_id, ext)
+        cur_output_filename = composeOO_name(u'%s_%d%s' % (noext, page_id, ext))
         print cur_output_filename
         doc_controller.setCurrentPage(draw_pages.getByIndex(page_id))
 
@@ -54,12 +57,20 @@ def convert(input_filename, output_filename):
             outputprops.append(PropertyValue('FilterFlags', 0, 'UTF8, LF', 0))
 
         doc.storeToURL('private:stream', tuple(outputprops))
+        created_files.append(cur_output_filename)
         fd.close()
     doc.dispose()
     doc.close(True)
+    return created_files
+
+def composeOO_name(file_path):
+    noext, ext = os.path.splitext(file_path)
+    checksum = hashlib.sha1(file_path).hexdigest()[:8].upper()
+    width, height = 0x31A, 0x463
+    return u'10000000%08X%08X%s%s' % (width, height, checksum, ext)
 
 def main():
-    convert('svbsa101k2.odg', 'svbsa101k2.png')
+    convertODG('svbsa101k2.odg', 'svbsa101k2.png')
 
 if __name__ == '__main__':
     main()

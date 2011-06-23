@@ -89,7 +89,7 @@ def getTree(path):
     return result
 
 def extractAll(zip_path, output_path):
-    fd = zipfile.ZipFile(zip_path, 'a')
+    fd = zipfile.ZipFile(zip_path, 'r')
     for info in fd.infolist():
         dst_path = os.path.join(output_path, info.filename)
         if info.filename.endswith('/'):

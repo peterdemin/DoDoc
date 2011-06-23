@@ -12,9 +12,9 @@
  <manifest:file-entry manifest:media-type="" manifest:full-path="Configurations2/images/Bitmaps/"/>
  <manifest:file-entry manifest:media-type="" manifest:full-path="Configurations2/images/"/>
  <manifest:file-entry manifest:media-type="application/vnd.sun.xml.ui.configuration" manifest:full-path="Configurations2/"/>
+ <manifest:file-entry manifest:media-type="image/png" manifest:full-path="Pictures/100000000000031A000004632157EE1F.png"/>
  <manifest:file-entry manifest:media-type="image/png" manifest:full-path="Pictures/100000000000031A0000046329AC4CEB.png"/>
- <manifest:file-entry manifest:media-type="image/png" manifest:full-path="Pictures/100000000000031A0000046385BBB745.png"/>
- <manifest:file-entry manifest:media-type="image/png" manifest:full-path="Pictures/100000000000031A00000463A22F2C90.png"/>
+ <manifest:file-entry manifest:media-type="image/png" manifest:full-path="Pictures/100000000000031A00000463A4063FBF.png"/>
  <manifest:file-entry manifest:media-type="" manifest:full-path="Pictures/"/>
  <manifest:file-entry manifest:media-type="application/binary" manifest:full-path="layout-cache"/>
  <manifest:file-entry manifest:media-type="text/xml" manifest:full-path="content.xml"/>
