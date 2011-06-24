@@ -1,3 +1,7 @@
+#!usr/bin/python
+# -*- coding: utf8 -*-
+encoding='utf8'
+
 import os
 import re
 import sys
@@ -13,8 +17,7 @@ from OpenOffice_document import packAll
 
 from Template import Template
 
-from DoDoc import convertODT
-from DoDraw import convertODG
+from odg2png import odg2png
 
 TAG_PARAM = 'param'
 TAG_USED_PM = 'usedPm'
@@ -72,7 +75,8 @@ def renderTemplate(template_path, flow_charts, template_parameters, result_path)
     for flow_chart_path in flow_charts:
         dest_path = os.path.join(template_basename, 'Pictures', flow_chart_path)
         shutil.copy2(flow_chart_path, dest_path)
-    replaceManifest(template_basename, flow_charts)
+    pictures = ['/'.join(['Pictures', f]) for f in flow_charts]
+    replaceManifest(template_basename, pictures)
     cleanPictures(template_basename, t.imageUrls())
 
     packAll(template_basename, result_path)
@@ -107,7 +111,6 @@ def main():
         params_path = sys.argv[3]
     else:
         template_path = 'templates/TT.odt'
-        #template_path = 'parameters.odt'
         flow_chart_path = 'stumuz.odg'
         params_path = 'stumuz.xml'
 
@@ -115,7 +118,7 @@ def main():
     template_params['param'] = parseParameters(params_path)
 
     flow_chart_name = basefilename(flow_chart_path)
-    flow_chart_page_filenames = convertODG(flow_chart_path, flow_chart_name+'.png')
+    flow_chart_page_filenames = odg2png(flow_chart_path, flow_chart_name+'.png')
     if len(flow_chart_page_filenames):
         template_params['flow_chart'] = []
         for name in flow_chart_page_filenames:

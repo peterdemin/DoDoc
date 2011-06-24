@@ -1,10 +1,8 @@
-import xml.sax.handler
-import xml.sax
-
 import re
-
+import xml.sax
 import xml.dom.minidom
 from pprint import pprint
+
 
 TAG_TABLE = u'table:table'
 TAG_ROW   = u'table:table-row'
@@ -30,7 +28,24 @@ def iterNode(doc, node, callback):
         callback.endElement(node.tagName)
 
 
-class Gen_XML(object):
+class Template(object):
+    def __init__(self, xml_content, params):
+        self.xml_content = xml_content
+        self.params = params or {}
+        self.image_urls = []
+
+    def render(self):
+        h = Template_handler(self.params)
+        xml.sax.parseString(self.xml_content, h)
+        result = h.resultXML()
+        self.image_urls = h.imageUrls()
+        return result
+
+    def imageUrls(self):
+        return self.image_urls
+
+
+class Template_handler(xml.sax.handler.ContentHandler):
     def __init__(self, params = None):
         self.params = params or {}
         self.doc = xml.dom.minidom.Document()
@@ -42,7 +57,7 @@ class Gen_XML(object):
         self.image_urls = []
 
     def startElement(self, name, attrs):
-        print 'START', self.node, name
+        #print 'START', self.node, name
         if self.handler:
             self.handler.startElement(name, attrs)
         else:
@@ -52,7 +67,7 @@ class Gen_XML(object):
                         self.handler = h(self, self.params)
                         self.handler.startElement(name, attrs)
                     else:
-                        print 'ignore', name
+                        #print 'ignore', name
                         break
                     return
             if self.node:
@@ -100,74 +115,18 @@ class Gen_XML(object):
 
     def moveUp_to(self, tag_name, current_node):
         # trace up to given tag
-        print 'moving up'
+        #print 'moving up'
         self.node = self.node.appendChild(current_node)
         while not self.node.tagName == tag_name:
-            print 'move up from', self.node.tagName
+            #print 'move up from', self.node.tagName
             self.node = self.node.parentNode
         # handle contents
-        print self.node.toprettyxml()
+        #print self.node.toprettyxml()
         iterNode(self.doc, self.node, self.handler)
         # remove node from tree and step up
         moved_up_to_node = self.node
         self.node = self.node.parentNode
         self.node.removeChild(moved_up_to_node)
-
-class Template(object):
-    def __init__(self, xml_content, params):
-        self.xml_content = xml_content
-        self.params = params or {}
-        self.image_urls = []
-
-    def render(self):
-        h = Template_handler(self.params)
-        xml.sax.parseString(self.xml_content, h)
-        result = h.resultXML()
-        self.image_urls = h.imageUrls()
-        return result
-
-    def imageUrls(self):
-        return self.image_urls
-
-
-class Template_handler(xml.sax.handler.ContentHandler):
-    re_param = re.compile(ur'(?iu)\{([a-z0-9\._]+)\}')
-
-    def __init__(self, params):
-        self.params = params or {}
-        self.gen = Gen_XML(self.params)
-
-    def startElement(self, name, attrs):
-        self.gen.startElement(name, attrs)
-
-    def endElement(self, name):
-        self.gen.endElement(name)
-
-    def characters(self, content):
-        self.gen.characters(content)
-
-    def resultXML(self):
-        return self.gen.resultXML()
-
-    def imageUrls(self):
-        return self.gen.imageUrls()
-
-class Parameters_finder(object):
-    re_param = re.compile(ur'(?iu)\{([a-z0-9\._]+)\}')
-
-    def __init__(self, doc = None):
-        self.parameters = set()
-
-    def startElement(self, name, attrs):
-        pass
-
-    def endElement(self, name):
-        pass
-
-    def characters(self, content):
-        params = self.re_param.findall(content)
-        for p in params:
-            self.parameters.add(p)
 
 
 class Tag_handler(object):
@@ -223,11 +182,12 @@ class Row_handler(Tag_handler):
         self.render_root = self.doc.createElement('root')
         if len(tables_used):
             for t in tables_used:
-                row_dict = {}
-                for lines in self.params[t]:
-                    for k, v in lines.iteritems():
-                        row_dict['%s.%s' % (t, k)] = v
-                    self.renderRow(row_dict)
+                if self.params.has_key(t):
+                    row_dict = {}
+                    for lines in self.params[t]:
+                        for k, v in lines.iteritems():
+                            row_dict['%s.%s' % (t, k)] = v
+                        self.renderRow(row_dict)
         else:
             self.renderRow({})
         return self.render_root
@@ -270,7 +230,7 @@ class Image_handler(Tag_handler):
                 cur_node = self.doc.createElement(name)
                 setAttributes(self.doc, cur_node, attrs)
                 self.initialize(cur_node)
-                print self.doc.toprettyxml()
+                #print self.doc.toprettyxml()
                 #self.startElement(name, attrs)
                 return
         if name == TAG_FRAME:
@@ -286,7 +246,7 @@ class Image_handler(Tag_handler):
             if self.omit_ends:
                 return
         self.node = self.node.parentNode
-        print self.node
+        #print self.node
 
     def render(self):
         render_root = self.doc.createElement('root')
@@ -305,7 +265,26 @@ class Image_handler(Tag_handler):
         else:
             print 'NO KEY', self.placeholder_name
             render_root.appendChild(self.doc.firstChild)
+        self.master.image_urls.extend(self.image_urls)
         return render_root
+
+
+class Parameters_finder(object):
+    re_param = re.compile(ur'(?iu)\{([a-z0-9\._]+)\}')
+
+    def __init__(self, doc = None):
+        self.parameters = set()
+
+    def startElement(self, name, attrs):
+        pass
+
+    def endElement(self, name):
+        pass
+
+    def characters(self, content):
+        params = self.re_param.findall(content)
+        for p in params:
+            self.parameters.add(p)
 
 
 class Replacer(object):
