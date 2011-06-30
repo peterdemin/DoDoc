@@ -26,25 +26,36 @@ TAG_USED_PM = 'usedPm'
 
 from ftplib import FTP
 
+import paradox
+
 class ARM_archive(object):
     #re_siam_dir = re.compile(ur'(?iu)Инв\. \_ [0-9]+ СИЯМ\.([0-9]{5}\-[0-9]{2} [0-9]{2} [0-9]{2})')
     re_siam_dir = re.compile(ur'(?iu)Инв\. \_ [0-9]+ СИЯМ\.(.+)')
     #re_siam_dir = re.compile(ur'(?iu)Инв\.(.+)')
     re_siam_TT_dir = re.compile(ur'(?iu)Инв\. \_ [0-9]+ ?СИЯМ\.([0-9]{5}\-[0-9]{2} 96 [0-9]{2})')
+    FTP_ENC = 'cp1251'
 
     def __init__(self):
         self.ftp = FTP()
         self.ftp.connect('172.2.0.200')
         self.ftp.login('petrovab', 'dfxG3')
 
+    def fetchDatabase(self, destination_path):
+        self.retr_destination_fp = open(destination_path, 'wb')
+        self.ftp.retrbinary(u'RETR Arhiv/DataBase/Documents.DB'.encode(self.FTP_ENC), self.__onRetrieve_binary)
+        self.retr_destination_fp.close()
+
+    def __onRetrieve_binary(self, chunk):
+        self.retr_destination_fp.write(chunk)
+
     def listdir(self, path):
         if type(path) == unicode:
-            path = path.encode('cp1251')
+            path = path.encode(self.FTP_ENC)
         result = []
         len_path = len(path)
         for item in self.ftp.nlst(path):
-            yield item[len_path+1:].decode('cp1251')
-            #result.append(item.decode('cp1251'))
+            yield item[len_path+1:].decode(self.FTP_ENC)
+            #result.append(item.decode(self.FTP_ENC))
         #return result
 
     def listSIAMs(self):
@@ -121,6 +132,14 @@ def main():
         params_path = 'stumuz_notification.xml'
 
     arm = ARM_archive()
+    db_path = 'Documents.DB'
+    arm.fetchDatabase(db_path)
+    db = paradox.Paradox_database(db_path)
+    print db.getCorrections_amount(u'СИЯМ.00496-01 96 01')
+    print db.getCorrections_amount(u'СИЯМ.00492-01 12 26')
+    print db.getCorrections_amount(u'СИЯМ.00492-01 12 22')
+    db.close()
+    return
     for item in sorted(arm.listTTs()):
         print item
 
