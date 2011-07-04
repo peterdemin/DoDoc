@@ -34,7 +34,6 @@ class Template(object):
     def __init__(self, xml_content, params):
         self.xml_content = xml_content
         self.params = params or {}
-        self.image_urls = []
 
     def render(self):
         h = Template_handler(self.params)
@@ -56,7 +55,8 @@ class Template_handler(xml.sax.handler.ContentHandler):
         self.available_handlers = [Row_handler, Image_handler, Condition_block_handler]
         self.handler = None
         self.do_not_handle = set()
-        self.image_urls = []
+        self.inserted_image_urls = []
+        self.excluded_image_urls = []
 
     def startElement(self, name, attrs):
         #print 'START', self.node, name
@@ -115,7 +115,7 @@ class Template_handler(xml.sax.handler.ContentHandler):
             return r.doc.toxml()
 
     def imageUrls(self):
-        return self.image_urls
+        return (self.inserted_image_urls, self.excluded_image_urls)
 
     def moveUp_to(self, tag_name, current_node):
         # trace up to given tag
@@ -208,7 +208,8 @@ class Image_handler(Tag_handler):
     def __init__(self, master, params):
         super(Image_handler, self).__init__(master, params)
         self.placeholder_name = None
-        self.image_urls = []
+        self.inserted_image_urls = []
+        self.excluded_image_urls = []
         self.moving_up = False
 
     def isDone(self):
@@ -240,7 +241,7 @@ class Image_handler(Tag_handler):
         if name == TAG_FRAME:
             self.placeholder_name = attrs['draw:name'].nodeValue
         if name == TAG_IMAGE:
-            self.image_urls.append(attrs['xlink:href'].nodeValue)
+            self.excluded_image_urls.append(attrs['xlink:href'].nodeValue)
         setAttributes(self.doc, self.node, attrs)
 
     def endElement(self, name):
@@ -255,7 +256,6 @@ class Image_handler(Tag_handler):
     def render(self):
         render_root = self.doc.createElement('root')
         if self.params.has_key(self.placeholder_name):
-            self.image_urls = []
             images = self.params[self.placeholder_name]
             # 'images' can be dict, or list of dicts
             if type(images) == dict:
@@ -264,12 +264,16 @@ class Image_handler(Tag_handler):
                 attr_dict = {u'draw:name' : image['name'], u'xlink:href' : image['url']}
                 r = Replacer(self.params, attr_dict)
                 iterNode(self.doc, self.doc.firstChild, r)
-                self.image_urls.append(image['url'])
+                self.inserted_image_urls.append(image['url'])
                 render_root.appendChild(r.doc.firstChild)
+            self.master.inserted_image_urls.extend(self.inserted_image_urls)
+            self.master.excluded_image_urls.extend(self.excluded_image_urls)
         else:
             print 'NO KEY', self.placeholder_name
             render_root.appendChild(self.doc.firstChild)
-        self.master.image_urls.extend(self.image_urls)
+            if self.excluded_image_urls[0].startswith(u'Pictures'):
+                self.master.excluded_image_urls.extend(self.excluded_image_urls)
+                self.master.inserted_image_urls.extend(self.excluded_image_urls)
         return render_root
 
 

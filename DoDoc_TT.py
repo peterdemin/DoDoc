@@ -76,22 +76,29 @@ def renderTemplate(template_path, flow_charts, template_parameters, result_path)
         dest_path = os.path.join(template_basename, 'Pictures', flow_chart_path)
         shutil.copy2(flow_chart_path, dest_path)
     pictures = ['/'.join(['Pictures', f]) for f in flow_charts]
-    replaceManifest(template_basename, pictures)
-    cleanPictures(template_basename, t.imageUrls())
+    inserted_images, excluded_images = t.imageUrls()
+    replaceManifest(template_basename, inserted_images, excluded_images)
+    cleanPictures(template_basename, inserted_images)
 
     packAll(template_basename, result_path)
     shutil.rmtree(template_basename)
 
-def replaceManifest(dest_dir, png_list):
+def replaceManifest(dest_dir, png_list_add, png_list_remove):
     manifest_path = os.path.join(dest_dir, 'META-INF', 'manifest.xml')
     manifest_text = open(manifest_path, 'rb').read()
 
     re_png = re.compile(ur'(?imu) <manifest:file\-entry manifest:media\-type="image\/png" manifest:full\-path="(Pictures\/[a-f0-9]+.png)"\/>')
 
     png_pattern = ' <manifest:file-entry manifest:media-type="image/png" manifest:full-path="%s"/>'
-    png_lines = '\n'.join([png_pattern % png for png in png_list])
+    png_lines = '\n'.join([png_pattern % png for png in png_list_add])
 
+    if len(png_list_remove) > 1:
+        #print 'remove %d images' % (len(png_list_remove)-1)
+        manifest_text, repls_amount = re_png.subn('', manifest_text, len(png_list_remove) - 1)
+        #print 'subn: %d' % (repls_amount)
+    #print 'insert %d images' % (len(png_list_add))
     replaced, repls_amount = re_png.subn(png_lines, manifest_text, 1)
+    #print 'subn: %d' % (repls_amount)
     open(manifest_path, 'wb').write(replaced)
 
 def cleanPictures(odt_path, used):
