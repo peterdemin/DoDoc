@@ -8,7 +8,9 @@ TAG_TABLE = u'table:table'
 TAG_ROW   = u'table:table-row'
 TAG_FRAME = u'draw:frame'
 TAG_IMAGE = u'draw:image'
-
+TAG_BREAK = u'text:line-break'
+TAG_SECTION = u'text:section'
+SECTION_NAME = u'text:name'
 
 def setAttributes(doc, node, attributes):
     if attributes:
@@ -51,7 +53,7 @@ class Template_handler(xml.sax.handler.ContentHandler):
         self.doc = xml.dom.minidom.Document()
         self.doc.encoding = "UTF-8"
         self.node = None
-        self.available_handlers = [Row_handler, Image_handler]
+        self.available_handlers = [Row_handler, Image_handler, Condition_block_handler]
         self.handler = None
         self.do_not_handle = set()
         self.image_urls = []
@@ -86,7 +88,6 @@ class Template_handler(xml.sax.handler.ContentHandler):
             self.node = self.node.parentNode
 
     def characters(self, content):
-        #print 'CONTENT', content.encode('cp866', 'replace')
         if self.handler:
             self.handler.characters(content)
             return
@@ -96,11 +97,14 @@ class Template_handler(xml.sax.handler.ContentHandler):
     def __insertHandled(self):
         handled_tag = self.handler.handled_tag
         rendered_root = self.handler.render()
-        self.do_not_handle.add(handled_tag)
-        self.handler = None
-        for child in rendered_root.childNodes:
-            iterNode(self.doc, child, self)
-        self.do_not_handle.remove(handled_tag)
+        if rendered_root:
+            self.do_not_handle.add(handled_tag)
+            self.handler = None
+            for child in rendered_root.childNodes:
+                iterNode(self.doc, child, self)
+            self.do_not_handle.remove(handled_tag)
+        else:
+            self.handler = None
 
     def resultXML(self):
         r = Replacer(self.params)
@@ -269,6 +273,40 @@ class Image_handler(Tag_handler):
         return render_root
 
 
+class Condition_block_handler(Tag_handler):
+    handled_tag = TAG_SECTION
+    have = re.compile(ur'(?iu)have_([a-z0-9_]+)(?: .+)?')
+    have_no = re.compile(ur'(?iu)have_no_([a-z0-9_]+)(?: .+)?')
+
+    def __init__(self, master, params):
+        super(Condition_block_handler, self).__init__(master, params)
+        self.node = self.doc.createElement('root')
+        self.doc.appendChild(self.node)
+
+    def isDone(self):
+        return self.node == self.doc.firstChild
+
+    def render(self):
+        root = self.doc.firstChild
+        if root.firstChild.attributes.has_key(SECTION_NAME):
+            block_name = root.firstChild.attributes[SECTION_NAME].value
+            m_no = self.have_no.match(block_name)
+            if m_no:
+                param_name = m_no.group(1)
+                if self.params.has_key(param_name):
+                    if self.params[param_name] != None:
+                        return None
+            else:
+                m = self.have.match(block_name)
+                if m:
+                    param_name = m.group(1)
+                    if self.params.has_key(param_name):
+                        if self.params[param_name] == None:
+                            return None
+                    else:
+                        return None
+        return root
+
 class Parameters_finder(object):
     re_param = re.compile(ur'(?iu)\{([a-z0-9\._]+)\}')
 
@@ -289,6 +327,7 @@ class Parameters_finder(object):
 
 class Replacer(object):
     re_param = re.compile(ur'(?iu)\{([a-z0-9\._]+)\}')
+    BREAK_LINE = u'##LINE-BREAK-IN-REPLACEMENT##'
 
     def __init__(self, rdict = None, adict = None):
         self.doc = xml.dom.minidom.Document()
@@ -318,14 +357,21 @@ class Replacer(object):
     def replacement(self, matched):
         key = matched.group(1)
         if self.rdict.has_key(key):
-            return unicode(self.rdict[key])
+            lines = [a.strip() for a in self.rdict[key].split('#BR#')]
+            content = self.BREAK_LINE.join(lines)
+            return unicode(content)
         else:
             return key
 
     def characters(self, content):
         rcontent = self.re_param.sub(self.replacement, content)
-        self.node.appendChild(self.doc.createTextNode(rcontent))
-
+        lines = rcontent.split(self.BREAK_LINE)
+        for i, line in enumerate(lines):
+            text_node = self.doc.createTextNode(line)
+            if i != 0:
+                break_node = self.doc.createElement(TAG_BREAK)
+                self.node.appendChild(break_node)
+            self.node.appendChild(text_node)
 
 def testTable():
     source = u'<xml><table:table><table:table-row>\

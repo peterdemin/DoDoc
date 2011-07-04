@@ -70,7 +70,7 @@ def composeOO_name(file_path):
     return u'10000000%08X%08X%s%s' % (width, height, checksum, ext)
 
 def main():
-    convertODG('svbsa101k2.odg', 'svbsa101k2.png')
+    odg2png('svbsa101k2.odg', 'svbsa101k2.png')
 
 if __name__ == '__main__':
     main()

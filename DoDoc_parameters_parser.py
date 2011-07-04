@@ -60,7 +60,7 @@ class Parser(xml.sax.handler.ContentHandler):
         elif self.cur_param:
             self.parameters[self.cur_param] = content
 
-def parseParams_XML(xml_content):
+def parseParameters_XML(xml_content):
     p = Parser()
     xml.sax.parseString(xml_content, p)
     return p.parameters
@@ -68,24 +68,24 @@ def parseParams_XML(xml_content):
 def main():
     xml_content = u'''<DoDoc>
     <approver>А.С. Сыров</approver>
-    <siam_id>00496-01 96 01</siam_id>
-    <params type="table">
+    <siam_id>СИЯМ.00496-01 96 01</siam_id>
+    <authors type="table">
         <row>
-            <id>1</id>
-            <name>Item1</name>
+            <position>Инженер</position>
+            <name>Демин</name>
         </row>
         <row>
-            <id>2</id>
+            <position>2</position>
             <name>Item2</name>
         </row>
-    </params>
+    </authors>
     <flow_chart type='image'>
         <image>svbsa101k2_1.png</image>
         <image>svbsa101k2_2.png</image>
         <image>svbsa101k2_3.png</image>
     </flow_chart>
 </DoDoc>'''
-    pprint(parseParams_XML(xml_content))
+    pprint(parseParameters_XML(xml_content))
 
 if __name__ == '__main__':
     main()
