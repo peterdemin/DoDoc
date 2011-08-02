@@ -112,7 +112,7 @@ def cleanPictures(odt_path, used):
 
 
 def main():
-    if len(sys.argv) == 3:
+    if len(sys.argv) == 4:
         template_path = sys.argv[1]
         flow_chart_path = sys.argv[2]
         params_path = sys.argv[3]

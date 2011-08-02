@@ -2,6 +2,7 @@ from import_uno import uno
 #import uno
 import unohelper
 import os
+import sys
 import hashlib
 from pprint import pprint
 
@@ -64,13 +65,24 @@ def odg2png(input_filename, output_filename):
     return created_files
 
 def composeOO_name(file_path):
+    dirname = os.path.dirname(file_path)
+    if(len(dirname)):
+        dirname+= '/'
     noext, ext = os.path.splitext(file_path)
     checksum = hashlib.sha1(file_path).hexdigest()[:8].upper()
     width, height = 0x31A, 0x463
-    return u'10000000%08X%08X%s%s' % (width, height, checksum, ext)
+    return u'%s10000000%08X%08X%s%s' % (dirname, width, height, checksum, ext)
 
 def main():
-    odg2png('svbsa101k2.odg', 'svbsa101k2.png')
+    input = 'svbsa101k2.odg'
+    output = 'Pictures/svbsa101k2.png'
+    if len(sys.argv) == 3:
+        input = sys.argv[1]
+        output = sys.argv[2]
+    else:
+        print 'Usage:'
+        print '    python odg2png input_odg_filename output_png_filename'
+    pprint( odg2png(input, output) )
 
 if __name__ == '__main__':
     main()

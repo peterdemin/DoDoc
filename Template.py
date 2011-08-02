@@ -55,8 +55,7 @@ class Template_handler(xml.sax.handler.ContentHandler):
         self.available_handlers = [Row_handler, Image_handler, Condition_block_handler]
         self.handler = None
         self.do_not_handle = set()
-        self.inserted_image_urls = []
-        self.excluded_image_urls = []
+        self.image_replacements = {}
 
     def startElement(self, name, attrs):
         #print 'START', self.node, name
@@ -115,7 +114,7 @@ class Template_handler(xml.sax.handler.ContentHandler):
             return r.doc.toxml()
 
     def imageUrls(self):
-        return (self.inserted_image_urls, self.excluded_image_urls)
+        return self.image_replacements
 
     def moveUp_to(self, tag_name, current_node):
         # trace up to given tag
@@ -208,8 +207,7 @@ class Image_handler(Tag_handler):
     def __init__(self, master, params):
         super(Image_handler, self).__init__(master, params)
         self.placeholder_name = None
-        self.inserted_image_urls = []
-        self.excluded_image_urls = []
+        self.marker_xlink = None
         self.moving_up = False
 
     def isDone(self):
@@ -241,7 +239,7 @@ class Image_handler(Tag_handler):
         if name == TAG_FRAME:
             self.placeholder_name = attrs['draw:name'].nodeValue
         if name == TAG_IMAGE:
-            self.excluded_image_urls.append(attrs['xlink:href'].nodeValue)
+            self.marker_xlink = attrs['xlink:href'].nodeValue
         setAttributes(self.doc, self.node, attrs)
 
     def endElement(self, name):
@@ -257,23 +255,18 @@ class Image_handler(Tag_handler):
         render_root = self.doc.createElement('root')
         if self.params.has_key(self.placeholder_name):
             images = self.params[self.placeholder_name]
-            # 'images' can be dict, or list of dicts
-            if type(images) == dict:
-                images = [images]
+            assert( type(images) in (list, tuple) )
+            inserted_xlinks = []
             for image in images:
-                attr_dict = {u'draw:name' : image['name'], u'xlink:href' : image['url']}
+                attr_dict = {u'draw:name' : image, u'xlink:href' : image}
                 r = Replacer(self.params, attr_dict)
                 iterNode(self.doc, self.doc.firstChild, r)
-                self.inserted_image_urls.append(image['url'])
                 render_root.appendChild(r.doc.firstChild)
-            self.master.inserted_image_urls.extend(self.inserted_image_urls)
-            self.master.excluded_image_urls.extend(self.excluded_image_urls)
+                inserted_xlinks.append(image)
+            self.master.image_replacements[self.marker_xlink] = inserted_xlinks
         else:
             print 'NO KEY', self.placeholder_name
             render_root.appendChild(self.doc.firstChild)
-            if self.excluded_image_urls[0].startswith(u'Pictures'):
-                self.master.excluded_image_urls.extend(self.excluded_image_urls)
-                self.master.inserted_image_urls.extend(self.excluded_image_urls)
         return render_root
 
 
@@ -365,7 +358,7 @@ class Replacer(object):
             content = self.BREAK_LINE.join(lines)
             return unicode(content)
         else:
-            return key
+            return matched.group(0)
 
     def characters(self, content):
         rcontent = self.re_param.sub(self.replacement, content)

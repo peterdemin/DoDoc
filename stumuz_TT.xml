@@ -1,0 +1,31 @@
+<DoDoc>
+    <approver>А.С. Сыров</approver>
+    <approver_post>Главный конструктор</approver_post>
+    <siam_id>СИЯМ.00496-01 96 01</siam_id>
+	<full_title>sfdsd#BR#fffgfg</full_title>
+	<litera>0</litera>
+	<title>fcgfcjhfgc</title>
+    <authors type="table">
+        <row>
+            <post>Инженер</post>
+            <name>Демин</name>
+        </row>
+        <row>
+            <post>2</post>
+            <name>Item2</name>
+        </row>
+    </authors>
+    <flow_chart type='image'>
+        <image>svbsa101k2.odg</image>
+    </flow_chart>
+    <bits type="table">
+        <row>
+            <name>qq</name>
+            <word>ww</word>
+        </row>
+        <row>
+            <name>dd</name>
+            <word>bb</word>
+        </row>
+    </bits>
+</DoDoc>
