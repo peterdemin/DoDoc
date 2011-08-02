@@ -25,6 +25,12 @@ def renderTemplate(template_path, template_parameters, result_path):
     temp_dir = basefilename(result_path)
     extractAll(template_path, temp_dir)
 
+    styles_xml_path = os.path.join(temp_dir, 'styles.xml')
+    styles_xml = open(styles_xml_path, 'r').read()
+    t = Template(styles_xml, template_parameters)
+    rendered_styles_xml = t.render()
+    codecs.open(styles_xml_path, 'w', 'utf-8').write(rendered_styles_xml)
+
     content_xml_path = os.path.join(temp_dir, 'content.xml')
     content_xml = open(content_xml_path, 'r').read()
     t = Template(content_xml, template_parameters)
@@ -37,6 +43,7 @@ def renderTemplate(template_path, template_parameters, result_path):
         for flow_chart_path in value:
             dest_path = os.path.join(temp_dir, flow_chart_path)
             shutil.copy2(flow_chart_path, dest_path)
+    shutil.rmtree('Pictures')
     replaceManifest(temp_dir, png_replacements)
     cleanPictures(temp_dir, png_replacements.keys())
 
@@ -57,10 +64,10 @@ def replaceManifest(dest_dir, png_replacements):
         if m:
             source_png = m.group(1)
             if png_replacements.has_key(source_png):
-                print '-', source_png
+                #print '-', source_png
                 for dest_png in png_replacements[source_png]:
                     result.append(png_pattern % (dest_png))
-                    print '+', dest_png
+                    #print '+', dest_png
             else:
                 result.append(line)
         else:
@@ -74,10 +81,11 @@ def cleanPictures(odt_path, to_delete):
     for pic in existing_pics:
         pic_path = '/'.join(['Pictures', pic])
         if pic_path in to_delete:
-            print '-', pic_path
+            #print '-', pic_path
             os.unlink(os.path.join(odt_path, pic_path))
         else:
-            print '~', pic_path
+            #print '~', pic_path
+            pass
 
 def main():
     if len(sys.argv) == 3:
@@ -88,7 +96,7 @@ def main():
         params_path = 'stumuz_TT.xml'
 
     template_params = parseParameters_XML(codecs.open(params_path, 'r', 'utf8').read())
-    pprint(template_params)
+    #pprint(template_params)
 
     result_path = u'%s_%s.odt' % (basefilename(template_path), basefilename(params_path))
     renderTemplate(template_path, template_params, result_path)

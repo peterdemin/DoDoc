@@ -39,7 +39,7 @@ def odg2png(input_filename, output_filename):
     for page_id in range(pages_amount):
         noext, ext = os.path.splitext(output_filename)
         cur_output_filename = composeOO_name(u'%s_%d%s' % (noext, page_id, ext))
-        print cur_output_filename
+        #print cur_output_filename
         doc_controller.setCurrentPage(draw_pages.getByIndex(page_id))
 
         fd = open(cur_output_filename, 'wb')

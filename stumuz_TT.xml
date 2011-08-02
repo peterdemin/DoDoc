@@ -18,6 +18,20 @@
     <flow_chart type='image'>
         <image>svbsa101k2.odg</image>
     </flow_chart>
+    <param type="table">
+        <row>
+            <identif>ri</identif>
+            <razm>м</razm>
+            <prec>0.125</prec>
+            <diapazon>+-268435456</diapazon>
+        </row>
+        <row>
+            <identif>vi</identif>
+            <razm>м/с</razm>
+            <prec>8.e-6</prec>
+            <diapazon>+-16384</diapazon>
+        </row>
+    </param>
     <bits type="table">
         <row>
             <name>qq</name>

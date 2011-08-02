@@ -11,6 +11,7 @@ TAG_IMAGE = u'draw:image'
 TAG_BREAK = u'text:line-break'
 TAG_SECTION = u'text:section'
 SECTION_NAME = u'text:name'
+TAG_PARAGRAPH = u'text:p'
 
 def setAttributes(doc, node, attributes):
     if attributes:
@@ -131,6 +132,17 @@ class Template_handler(xml.sax.handler.ContentHandler):
         self.node = self.node.parentNode
         self.node.removeChild(moved_up_to_node)
 
+    def moveUp_after(self, tag_name, current_node):
+        self.node = self.node.appendChild(current_node)
+        while not self.node.tagName == tag_name:
+            self.node = self.node.parentNode
+        # One more step:
+        self.node = self.node.parentNode
+        iterNode(self.doc, self.node, self.handler)
+        moved_up_to_node = self.node
+        self.node = self.node.parentNode
+        self.node.removeChild(moved_up_to_node)
+
 
 class Tag_handler(object):
     '''handled_tag - tag, that is handled by this handler'''
@@ -217,7 +229,8 @@ class Image_handler(Tag_handler):
         self.moving_up = True
         self.omit_ends = False
         self.entry_node = self.master.node
-        self.master.moveUp_to(TAG_FRAME, current_node)
+        #self.master.moveUp_to(TAG_FRAME, current_node)
+        self.master.moveUp_after(TAG_FRAME, current_node)
         self.moving_up = False
 
     def startElement(self, name, attrs):
@@ -237,9 +250,15 @@ class Image_handler(Tag_handler):
                 #self.startElement(name, attrs)
                 return
         if name == TAG_FRAME:
-            self.placeholder_name = attrs['draw:name'].nodeValue
+            if type(attrs['draw:name']) == unicode:
+                self.placeholder_name = attrs['draw:name']
+            else:
+                self.placeholder_name = attrs['draw:name'].nodeValue
         if name == TAG_IMAGE:
-            self.marker_xlink = attrs['xlink:href'].nodeValue
+            if type(attrs['xlink:href']) == unicode:
+                self.marker_xlink = attrs['xlink:href']
+            else:
+                self.marker_xlink = attrs['xlink:href'].nodeValue
         setAttributes(self.doc, self.node, attrs)
 
     def endElement(self, name):
@@ -265,7 +284,7 @@ class Image_handler(Tag_handler):
                 inserted_xlinks.append(image)
             self.master.image_replacements[self.marker_xlink] = inserted_xlinks
         else:
-            print 'NO KEY', self.placeholder_name
+            #print 'NO KEY', self.placeholder_name
             render_root.appendChild(self.doc.firstChild)
         return render_root
 
@@ -437,16 +456,18 @@ def testImage_in_table():
 <table:table-cell><text:p>{table1.id}</text:p></table:table-cell>\
 <table:table-cell><text:p>{table1.name}</text:p></table:table-cell>\
 <table:table-cell>\
+<text:p>\
 <draw:frame draw:name="flow_chart"><draw:image xlink:href="Pictures/asd.png" /></draw:frame>\
+</text:p>\
 </table:table-cell>\
 </table:table-row></table:table>\
 </xml>'''
     parameters = {
             u'flow_chart' :
                 (
-                    {'name' : 'svbsa101k2_0.png', 'url' : 'Pictures/svbsa101k2_0.png'},
-                    {'name' : 'svbsa101k2_1.png', 'url' : 'Pictures/svbsa101k2_1.png'},
-                    {'name' : 'svbsa101k2_2.png', 'url' : 'Pictures/svbsa101k2_2.png'},
+                    'svbsa101k2_0.png',
+                    'svbsa101k2_1.png',
+                    'svbsa101k2_2.png',
                 ),
             u'table1' :
                 (

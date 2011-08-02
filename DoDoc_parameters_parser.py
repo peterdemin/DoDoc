@@ -36,7 +36,7 @@ class Parser(xml.sax.handler.ContentHandler):
                     elif attrs['type'] == u'var':
                         self.cur_param = name
                     else:
-                        print 'Unexpected type attribute value: "%s"' % (attrs['type'])
+                        print 'ATTENTION: Unexpected type attribute value: "%s"' % (attrs['type'])
                 else:
                     self.cur_param = name
         self.level+= 1
@@ -78,7 +78,6 @@ class Parser(xml.sax.handler.ContentHandler):
         for try_two_times in (1, 2):
             try:
                 import odg2png
-                print output_filename
                 pngs = odg2png.odg2png(odg_path, output_filename)
             except Exception, e:
                 if e.typeName == 'com.sun.star.connection.NoConnectException':
