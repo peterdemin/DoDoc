@@ -42,4 +42,51 @@
             <word>bb</word>
         </row>
     </bits>
+    <global type="table">
+        <row>
+            <name>qq</name>
+            <razm>ww</razm>
+            <identif>ee</identif>
+            <diap>rr</diap>
+            <prec>tt</prec>
+            <type>yy</type>
+            <scale>uu</scale>
+            <comment>ii</comment>
+        </row>
+    </global>
+    <local type="table">
+        <row>
+            <name>qq</name>
+            <razm>ww</razm>
+            <identif>ee</identif>
+            <save>EE</save>
+            <diap>rr</diap>
+            <prec>tt</prec>
+            <type>yy</type>
+            <scale>uu</scale>
+            <comment>ii</comment>
+        </row>
+    </local>
+    <priznak type="table">
+        <row>
+            <name>qq</name>
+            <identif>ee</identif>
+            <used>uu</used>
+            <comment>ii</comment>
+        </row>
+    </priznak>
+    <const type="table">
+        <row>
+            <name>qq</name>
+            <razm>ww</razm>
+            <identif>ee</identif>
+            <value_const>ee</value_const>
+            <used>uu</used>
+            <diap>rr</diap>
+            <prec>tt</prec>
+            <type>yy</type>
+            <scale>uu</scale>
+            <comment>ii</comment>
+        </row>
+    </const>
 </DoDoc>

@@ -43,12 +43,14 @@ def renderTemplate(template_path, template_parameters, result_path):
         for flow_chart_path in value:
             dest_path = os.path.join(temp_dir, flow_chart_path)
             shutil.copy2(flow_chart_path, dest_path)
-    shutil.rmtree('Pictures')
     replaceManifest(temp_dir, png_replacements)
     cleanPictures(temp_dir, png_replacements.keys())
 
     packAll(temp_dir, result_path)
-    shutil.rmtree(temp_dir)
+    if os.path.exists('Pictures'):
+        shutil.rmtree('Pictures')
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
 
 def replaceManifest(dest_dir, png_replacements):
     import re

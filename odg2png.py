@@ -1,19 +1,29 @@
-from import_uno import uno
-#import uno
-import unohelper
 import os
 import sys
-import hashlib
-from pprint import pprint
-
-from com.sun.star.io import IOException, XOutputStream, XSeekable, XInputStream
-from com.sun.star.beans import PropertyValue
-
-from OpenOffice_document import InputStream
-from OpenOffice_document import OutputStream
-from OpenOffice_document import Document
 
 def odg2png(input_filename, output_filename):
+    try:
+        return odg2png_unchecked(input_filename, output_filename)
+    except Exception, e:
+        if hasattr(e, 'typeName') and (e.typeName == 'com.sun.star.connection.NoConnectException'):
+            import time
+            os.system("start start_oo_server.bat")
+            time.sleep(5.0)
+            return odg2png_unchecked(input_filename, output_filename)
+        else:
+            raise
+    return None
+
+def odg2png_unchecked(input_filename, output_filename):
+    from import_uno import uno
+
+    from com.sun.star.io import IOException, XOutputStream, XSeekable, XInputStream
+    from com.sun.star.beans import PropertyValue
+
+    from OpenOffice_document import InputStream
+    from OpenOffice_document import OutputStream
+    from OpenOffice_document import Document
+
     OOO_CONNECTION = 'socket,host=localhost,port=2002;urp;StarOffice.ComponentContext'
     context = uno.getComponentContext()
     resolver = context.ServiceManager.createInstanceWithContext('com.sun.star.bridge.UnoUrlResolver', context)
@@ -39,9 +49,12 @@ def odg2png(input_filename, output_filename):
     for page_id in range(pages_amount):
         noext, ext = os.path.splitext(output_filename)
         cur_output_filename = composeOO_name(u'%s_%d%s' % (noext, page_id, ext))
-        #print cur_output_filename
         doc_controller.setCurrentPage(draw_pages.getByIndex(page_id))
 
+        dirname = os.path.dirname(cur_output_filename)
+        if len(dirname):
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
         fd = open(cur_output_filename, 'wb')
         filter_name = 'draw_png_Export'
         outputprops = [
@@ -65,6 +78,7 @@ def odg2png(input_filename, output_filename):
     return created_files
 
 def composeOO_name(file_path):
+    import hashlib
     dirname = os.path.dirname(file_path)
     if(len(dirname)):
         dirname+= '/'
@@ -74,6 +88,7 @@ def composeOO_name(file_path):
     return u'%s10000000%08X%08X%s%s' % (dirname, width, height, checksum, ext)
 
 def main():
+    from pprint import pprint
     input = 'svbsa101k2.odg'
     output = 'Pictures/svbsa101k2.png'
     if len(sys.argv) == 3:

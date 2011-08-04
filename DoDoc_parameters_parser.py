@@ -62,13 +62,21 @@ class Parser(xml.sax.handler.ContentHandler):
                     if os.path.splitext(content)[1].lower() == u'.odg':
                         self.parseODG(content)
                     elif os.path.splitext(content)[1].lower() == u'.png':
-                        self.parameters[self.cur_image].append(content)
+                        self.parsePNG(content)
                     else:
                         print (u'Error: Only .png and .odg images are allowed: "%s"' % (content)).encode('cp866', 'replace')
                 else:
                     print (u'Error: No such image file: "%s"' % (content)).encode('cp866', 'replace')
         elif self.cur_param:
             self.parameters[self.cur_param] = content
+
+    def parsePNG(self, png_path):
+        import shutil
+        output_filename = '/'.join(['Pictures', os.path.basename(png_path)])
+        if not os.path.exists('Pictures'):
+            os.mkdir('Pictures')
+        shutil.copy2(png_path, output_filename)
+        self.parameters[self.cur_image].append(output_filename)
 
     def parseODG(self, odg_path):
         pngs = []
@@ -88,7 +96,8 @@ class Parser(xml.sax.handler.ContentHandler):
                 else:
                     raise
             break  # success occured
-        self.parameters[self.cur_image].extend(pngs)
+        if pngs:
+            self.parameters[self.cur_image].extend(pngs)
 
 def parseParameters_XML(xml_content):
     p = Parser()

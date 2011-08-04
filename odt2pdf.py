@@ -1,11 +1,27 @@
-from import_uno import uno
-from com.sun.star.beans import PropertyValue
-
-from OpenOffice_document import InputStream
-from OpenOffice_document import OutputStream
-from OpenOffice_document import Document
+import os
+import sys
 
 def odt2pdf(input_filename, output_filename):
+    try:
+        return odt2pdf_unchecked(input_filename, output_filename)
+    except Exception, e:
+        if hasattr(e, 'typeName') and (e.typeName == 'com.sun.star.connection.NoConnectException'):
+            import time
+            os.system("start start_oo_server.bat")
+            time.sleep(5.0)
+            return odt2pdf_unchecked(input_filename, output_filename)
+        else:
+            raise
+    return None
+
+def odt2pdf_unchecked(input_filename, output_filename):
+    from import_uno import uno
+    from com.sun.star.beans import PropertyValue
+
+    from OpenOffice_document import InputStream
+    from OpenOffice_document import OutputStream
+    from OpenOffice_document import Document
+
     OOO_CONNECTION = 'socket,host=localhost,port=2002;urp;StarOffice.ComponentContext'
     context = uno.getComponentContext()
     resolver = context.ServiceManager.createInstanceWithContext('com.sun.star.bridge.UnoUrlResolver', context)
@@ -15,12 +31,12 @@ def odt2pdf(input_filename, output_filename):
     desktop = unosvcmgr.createInstanceWithContext('com.sun.star.frame.Desktop', unocontext)
     config = unosvcmgr.createInstanceWithContext('com.sun.star.configuration.ConfigurationProvider', unocontext)
 
-    print 'unosvcmgr:', type(unosvcmgr)
-    print u', '.join(dir(unosvcmgr))
-    print 'desktop:', type(desktop)
-    print u', '.join(dir(desktop))
-    print 'config:', type(config)
-    print u', '.join(dir(config))
+    #print 'unosvcmgr:', type(unosvcmgr)
+    #print u', '.join(dir(unosvcmgr))
+    #print 'desktop:', type(desktop)
+    #print u', '.join(dir(desktop))
+    #print 'config:', type(config)
+    #print u', '.join(dir(config))
 
     document = Document(input_filename)
     document.delete_on_close = False
@@ -52,7 +68,15 @@ def odt2pdf(input_filename, output_filename):
     fd.close()
 
 def main():
-    odt2pdf('Variables_variables.odt', 'Variables_variables.pdf')
+    input = 'Variables_variables.odt'
+    output = 'Variables_variables.pdf'
+    if len(sys.argv) == 3:
+        input = sys.argv[1]
+        output = sys.argv[2]
+    else:
+        print 'Usage:'
+        print '    python odt2pdf input_odt_filename output_pdf_filename'
+    odt2pdf(input, output)
     print 'done'
 
 if __name__ == '__main__':
