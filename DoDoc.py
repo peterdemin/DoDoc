@@ -96,7 +96,7 @@ def main():
         params_path = sys.argv[2]
     else:
         template_path = 'templates/TT.odt'
-        params_path = 'stumuz_TT.xml'
+        params_path = 'disp_sno_p.xml'
 
     template_params = parseParameters_XML(codecs.open(params_path, 'r', 'utf8').read())
     #pprint(template_params)

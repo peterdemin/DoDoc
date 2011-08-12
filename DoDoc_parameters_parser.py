@@ -42,14 +42,20 @@ class Parser(xml.sax.handler.ContentHandler):
         self.level+= 1
 
     def endElement(self, name):
-        if self.cur_param:
-            self.cur_param = None
-        elif self.cur_table:
+        if self.cur_table:
             if self.cur_table == name:
                 self.cur_table = None
-        elif self.cur_image:
+            elif self.cur_param:
+                if not self.parameters[self.cur_table][-1].has_key(self.cur_param):
+                    self.parameters[self.cur_table][-1][self.cur_param] = u''
+                self.cur_param = None
+        if self.cur_image:
             if self.cur_image == name:
                 self.cur_image = None
+        if self.cur_param:
+            if not self.parameters.has_key(self.cur_param):
+                self.parameters[self.cur_param] = u''
+            self.cur_param = None
         self.level-= 1
 
     def characters(self, content):
