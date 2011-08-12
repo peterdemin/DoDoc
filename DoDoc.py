@@ -79,15 +79,16 @@ def replaceManifest(dest_dir, png_replacements):
 
 def cleanPictures(odt_path, to_delete):
     pic_path = os.path.join(odt_path, 'Pictures')
-    existing_pics = os.listdir(pic_path)
-    for pic in existing_pics:
-        pic_path = '/'.join(['Pictures', pic])
-        if pic_path in to_delete:
-            #print '-', pic_path
-            os.unlink(os.path.join(odt_path, pic_path))
-        else:
-            #print '~', pic_path
-            pass
+    if os.path.exists(pic_path):
+        existing_pics = os.listdir(pic_path)
+        for pic in existing_pics:
+            pic_path = '/'.join(['Pictures', pic])
+            if pic_path in to_delete:
+                #print '-', pic_path
+                os.unlink(os.path.join(odt_path, pic_path))
+            else:
+                #print '~', pic_path
+                pass
 
 def main():
     if len(sys.argv) == 3:

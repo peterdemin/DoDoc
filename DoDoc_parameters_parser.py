@@ -80,7 +80,7 @@ class Parser(xml.sax.handler.ContentHandler):
 
     def parseODG(self, odg_path):
         pngs = []
-        output_filename = '/'.join(['Pictures', os.path.splitext(odg_path)[0] + u'.png'])
+        output_filename = '/'.join(['Pictures', os.path.splitext(os.path.basename(odg_path))[0] + u'.png'])
         if not os.path.exists('Pictures'):
             os.mkdir('Pictures')
         for try_two_times in (1, 2):
