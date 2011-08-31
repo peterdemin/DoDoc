@@ -7,6 +7,7 @@ import sys
 import codecs
 import shutil
 from pprint import pprint
+from optparse import OptionParser
 
 import xml.sax.handler
 import xml.sax
@@ -91,17 +92,29 @@ def cleanPictures(odt_path, to_delete):
                 pass
 
 def main():
-    if len(sys.argv) == 3:
-        template_path = sys.argv[1]
-        params_path = sys.argv[2]
+    opts = OptionParser()
+    opts.add_option("-t", "--template", dest="template_path",   help="input ODT template file path")
+    opts.add_option("-x", "--xml",      dest="xml_path",        help="input XML parameters file path")
+    opts.add_option("-o", "--output",   dest="result_path",     help="output ODT result file path")
+    (options, args) = opts.parse_args()
+    if options.template_path:
+        template_path = options.template_path
     else:
-        template_path = 'templates/TT.odt'
-        params_path = 'disp_sno_p.xml'
+        print 'ERROR: template path not specified. Use --help for command line arguments help.'
+        return
+    if options.xml_path:
+        xml_path = options.xml_path
+    else:
+        print 'ERROR: xml path not specified. Use --help for command line arguments help.'
+        return
+    if options.result_path:
+        result_path = options.result_path
+    else:
+        print 'WARNING: result path not specified. Use --help for command line arguments help.'
+        result_path = u'%s_%s.odt' % (basefilename(template_path), basefilename(xml_path))
+        print 'Using "%s" by default.' % (result_path,)
 
-    template_params = parseParameters_XML(codecs.open(params_path, 'r', 'utf8').read())
-    #pprint(template_params)
-
-    result_path = u'%s_%s.odt' % (basefilename(template_path), basefilename(params_path))
+    template_params = parseParameters_XML(codecs.open(xml_path, 'r', 'utf8').read())
     renderTemplate(template_path, template_params, result_path)
 
 if __name__ == '__main__':
