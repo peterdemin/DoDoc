@@ -198,8 +198,8 @@ class Row_handler(Tag_handler):
         if len(tables_used):
             for t in tables_used:
                 if self.params.has_key(t):
-                    row_dict = {}
                     for lines in self.params[t]:
+                        row_dict = {}
                         for k, v in lines.iteritems():
                             row_dict['%s.%s' % (t, k)] = v
                         self.renderRow(row_dict)
