@@ -59,9 +59,12 @@ class Parser(xml.sax.handler.ContentHandler):
         self.level-= 1
 
     def characters(self, content):
+        def safe_update(d, elem, content):
+            d[elem] = (d.get(elem) or u'') + content
         if self.cur_table:
             if self.cur_param:
-                self.parameters[self.cur_table][-1][self.cur_param] = content
+                if len(content.strip()) > 0:
+                    safe_update(self.parameters[self.cur_table][-1], self.cur_param, content)
         elif self.cur_image:
             if self.cur_param:
                 if os.path.exists(content):
@@ -74,7 +77,8 @@ class Parser(xml.sax.handler.ContentHandler):
                 else:
                     print (u'Error: No such image file: "%s"' % (content)).encode('cp866', 'replace')
         elif self.cur_param:
-            self.parameters[self.cur_param] = content
+            if len(content.strip()) > 0:
+                safe_update(self.parameters, self.cur_param, content)
 
     def parsePNG(self, png_path):
         import shutil
@@ -117,7 +121,9 @@ def main():
     <authors type="table">
         <row>
             <position>Инженер</position>
-            <name>Демин</name>
+            <name>Demin
+            Peter
+            Evgenievich</name>
         </row>
         <row>
             <position>2</position>
@@ -125,7 +131,7 @@ def main():
         </row>
     </authors>
     <flow_chart type='image'>
-        <image>svbsa101k2.odg</image>
+        <image>100000000000031A00000463D338E056.png</image>
     </flow_chart>
 </DoDoc>'''
     pprint(parseParameters_XML(xml_content))
