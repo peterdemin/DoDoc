@@ -11,4 +11,3 @@ copy /Y OpenOffice_document.py      Export\OpenOffice_document.py
 copy /Y Template.py                 Export\Template.py
 copy /Y README.txt                  Export\README.txt
 copy /Y stumuz_TT.xml               Export\stumuz_TT.xml
-copy /Y templates\*                 Export\templates\

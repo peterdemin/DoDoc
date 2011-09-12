@@ -8,87 +8,97 @@ from pprint import pprint
 
 class Parser(xml.sax.handler.ContentHandler):
     def __init__(self):
-        self.parameters = {}
-        self.cur_param = None
-        self.cur_image = None
-        self.cur_table = None
+        self.tree = {}
+        self.cur_name = None
+        self.in_row = None
+        self.cur_row = None
+        self.in_image = None
+        self.cur_images = []
         self.image_pathes = set()
-        self.level = 0
+        self.content = u''
 
     def startElement(self, name, attrs):
-        if self.level > 0:
-            if self.cur_table:
-                if name == u'row':
-                    self.parameters[self.cur_table].append({})
-                else:
-                    self.cur_param = name
-            elif self.cur_image:
-                if name == u'image':
-                    self.cur_param = name
+        if name == u'ROW':
+            if self.in_row:
+                print 'ERROR: Nested ROWs are not allowed!'
+                return
             else:
-                if attrs.has_key('type'):
-                    if attrs['type'] == u'image':
-                        self.cur_image = name
-                        self.parameters[self.cur_image] = []
-                    elif attrs['type'] == u'table':
-                        self.cur_table = name
-                        self.parameters[self.cur_table] = []
-                    elif attrs['type'] == u'var':
-                        self.cur_param = name
-                    else:
-                        print 'ATTENTION: Unexpected type attribute value: "%s"' % (attrs['type'])
+                if self.cur_name:
+                    self.in_row = self.cur_name
+                    self.cur_row = {}
+                    if not self.tree.has_key(self.in_row):
+                        self.tree[self.in_row] = []
                 else:
-                    self.cur_param = name
-        self.level+= 1
+                    print 'ERROR: "ROW" tag name is reserved!'
+        elif name == u'IMAGE':
+            if self.cur_name:
+                self.in_image = self.cur_name
+                if self.in_row:
+                    self.cur_row[self.in_image] = []
+                else:
+                    self.tree[self.in_image] = []
+            else:
+                print 'ERROR: "IMAGE" tag name is reserved!'
+        else:
+            self.cur_name = name
+        self.content = u''
 
     def endElement(self, name):
-        if self.cur_table:
-            if self.cur_table == name:
-                self.cur_table = None
-            elif self.cur_param:
-                if not self.parameters[self.cur_table][-1].has_key(self.cur_param):
-                    self.parameters[self.cur_table][-1][self.cur_param] = u''
-                self.cur_param = None
-        if self.cur_image:
-            if self.cur_image == name:
-                self.cur_image = None
-        if self.cur_param:
-            if not self.parameters.has_key(self.cur_param):
-                self.parameters[self.cur_param] = u''
-            self.cur_param = None
-        self.level-= 1
-
-    def characters(self, content):
         def safe_update(d, elem, content):
-            d[elem] = (d.get(elem) or u'') + content
-        if self.cur_table:
-            if self.cur_param:
-                if len(content.strip()) > 0:
-                    safe_update(self.parameters[self.cur_table][-1], self.cur_param, content)
-        elif self.cur_image:
-            if self.cur_param:
-                if os.path.exists(content):
-                    if os.path.splitext(content)[1].lower() == u'.odg':
-                        self.parseODG(content)
-                    elif os.path.splitext(content)[1].lower() == u'.png':
-                        self.parsePNG(content)
-                    else:
-                        print (u'Error: Only .png and .odg images are allowed: "%s"' % (content)).encode('cp866', 'replace')
-                else:
-                    print (u'Error: No such image file: "%s"' % (content)).encode('cp866', 'replace')
-        elif self.cur_param:
-            if len(content.strip()) > 0:
-                safe_update(self.parameters, self.cur_param, content)
+            old_content = d.get(elem) or u''
+            if type(old_content) == unicode:
+                d[elem] = old_content + content
+        if name == u'ROW':
+            self.tree[self.in_row].append(self.cur_row)
+            self.cur_name = self.in_row
+            self.in_row = None
+        elif name == u'IMAGE':
+            self.cur_images.extend(self.__parseIMAGE())
+            print self.cur_images
+        elif name == self.in_image:
+            if self.in_row:
+                self.cur_row[self.in_image].extend(self.cur_images)
+            else:
+                self.tree[self.in_image].extend(self.cur_images)
+            self.in_image = None
+            self.cur_images = []
+        elif name == self.in_row:
+            assert(self.in_row == None)
+            self.cur_name = None
+        elif self.in_row:
+            self.cur_row[self.cur_name] = self.content
+        else:
+            if self.cur_name == name:
+                safe_update(self.tree, self.cur_name, self.content)
+            else:
+                print '!=', self.cur_name, name
+            self.cur_name = None
+        self.content = u''
 
-    def parsePNG(self, png_path):
+    def characters(self, text):
+        self.content+= text
+
+    def __parseIMAGE(self):
+        if os.path.exists(self.content):
+            if os.path.splitext(self.content)[1].lower() == u'.odg':
+                return self.__parseODG(self.content)
+            elif os.path.splitext(self.content)[1].lower() == u'.png':
+                return self.__parsePNG(self.content)
+            else:
+                print (u'Error: Only .png and .odg images are allowed: "%s"' % (self.content)).encode('cp866', 'replace')
+        else:
+            print (u'Error: No such image file: "%s"' % (self.content)).encode('cp866', 'replace')
+        return []
+
+    def __parsePNG(self, png_path):
         import shutil
         output_filename = '/'.join(['Pictures', os.path.basename(png_path)])
         if not os.path.exists('Pictures'):
             os.mkdir('Pictures')
         shutil.copy2(png_path, output_filename)
-        self.parameters[self.cur_image].append(output_filename)
+        return [output_filename]
 
-    def parseODG(self, odg_path):
+    def __parseODG(self, odg_path):
         pngs = []
         output_filename = '/'.join(['Pictures', os.path.splitext(os.path.basename(odg_path))[0] + u'.png'])
         if not os.path.exists('Pictures'):
@@ -106,32 +116,106 @@ class Parser(xml.sax.handler.ContentHandler):
                 else:
                     raise
             break  # success occured
-        if pngs:
-            self.parameters[self.cur_image].extend(pngs)
+        return pngs
 
 def parseParameters_XML(xml_content):
     p = Parser()
     xml.sax.parseString(xml_content, p)
-    return p.parameters
+    return expandImages_in_tables(p.tree)
+
+def testImage_in_table():
+    params = { u'table' : [ { u'fc1' : [u'1.png', u'2.png'],            u'fc2' : [u'3.png', u'4.png', u'5.png'] },
+                            { u'fc1' : [u'6.png', u'7.png', u'8.png'],  u'fc2' : [u'9.png'] },
+                            { u'a' : u'aa', u'b' : u'bb' },
+                          ],
+             }
+    pprint(expandImages_in_tables(params))
+
+def is_table(value):
+    if type(value) == list:
+        if len(value):
+            if type(value[0]) == dict:
+                return True
+    return False
+
+def is_image(value):
+    if type(value) == list:
+        if len(value):
+            if type(value[0]) == unicode:
+                return True
+            else:
+                return False
+        else:
+            return True
+    else:
+        return False
+    return False
+
+def expandImages_in_tables(params):
+    result = {}
+    for k, v in params.iteritems():
+        if is_table(v):
+            id = 1
+            sub_id = 1
+            result[k] = []
+            for row in v:
+                image_rows = 0
+                row['ID'] = id
+                row['AMOUNT'] = len(v)
+                for rk, rv in row.iteritems():
+                    if is_image(rv):
+                        print rk, 'in', k, len(rv)
+                        image_rows = max(len(rv), image_rows)
+                if image_rows in (0, 1):
+                    row['SUB_ID'] = 1
+                    row['SUB_AMOUNT'] = 1
+                    result[k].append(row)
+                else:
+                    for image_id in range(image_rows):
+                        cur_row = {}
+                        for rk, rv in row.iteritems():
+                            if is_image(rv):
+                                if len(rv) > image_id:
+                                    cur_row[rk] = [rv[image_id]]
+                                else:
+                                    cur_row[rk] = []
+                            else:
+                                cur_row[rk] = rv
+                        cur_row['SUB_ID'] = sub_id
+                        cur_row['SUB_AMOUNT'] = image_rows
+                        result[k].append(cur_row)
+                        sub_id+= 1
+                id += 1
+                sub_id = 1
+        else:
+            result[k] = v
+    return result
 
 def main():
-    xml_content = u'''<DoDoc>
+    #return testImage_in_table()
+    xml_content = u'''
+<DoDoc>
     <approver>А.С. Сыров</approver>
     <siam_id>СИЯМ.00496-01 96 01</siam_id>
     <authors type="table">
-        <row>
+        <ROW>
             <position>Инженер</position>
             <name>Demin
             Peter
             Evgenievich</name>
-        </row>
-        <row>
+        </ROW>
+        <ROW>
             <position>2</position>
             <name>Item2</name>
-        </row>
+            <flow_chart type='image'>
+                <IMAGE>1.png</IMAGE>
+                <IMAGE>1.png</IMAGE>
+            </flow_chart>
+        </ROW>
     </authors>
     <flow_chart type='image'>
-        <image>100000000000031A00000463D338E056.png</image>
+        <IMAGE>1.png</IMAGE>
+        <IMAGE>2.png</IMAGE>
     </flow_chart>
 </DoDoc>'''
     pprint(parseParameters_XML(xml_content))

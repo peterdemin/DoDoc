@@ -106,13 +106,16 @@ class Template_handler(xml.sax.handler.ContentHandler):
         else:
             self.handler = None
 
-    def resultXML(self):
+    def render(self):
         r = Replacer(self.params)
         iterNode(self.doc, self.doc.firstChild, r)
+        return r.doc
+
+    def resultXML(self):
         if __name__ == '__main__':
-            return r.doc.toprettyxml()
+            return self.render().toprettyxml()
         else:
-            return r.doc.toxml()
+            return self.render().toxml()
 
     def imageUrls(self):
         return self.image_replacements
@@ -136,8 +139,8 @@ class Template_handler(xml.sax.handler.ContentHandler):
         self.node = self.node.appendChild(current_node)
         while not self.node.tagName == tag_name:
             self.node = self.node.parentNode
-        # One more step:
-        self.node = self.node.parentNode
+        ## One more step:
+        #self.node = self.node.parentNode
         iterNode(self.doc, self.node, self.handler)
         moved_up_to_node = self.node
         self.node = self.node.parentNode
@@ -202,16 +205,22 @@ class Row_handler(Tag_handler):
                         row_dict = {}
                         for k, v in lines.iteritems():
                             row_dict['%s.%s' % (t, k)] = v
+                        #pprint(row_dict)
                         self.renderRow(row_dict)
         else:
             self.renderRow({})
         return self.render_root
 
     def renderRow(self, params):
-        r = Replacer(params)
-        iterNode(self.doc, self.doc.firstChild, r)
-        self.render_root.appendChild(r.doc.firstChild)
-
+        t = Template_handler(params)
+        t.do_not_handle.add(TAG_ROW)
+        iterNode(self.doc, self.doc.firstChild, t)
+        for k, v in t.image_replacements.iteritems():
+            if self.master.image_replacements.has_key(k):
+                self.master.image_replacements[k]+= v
+            else:
+                self.master.image_replacements[k] = v
+        self.render_root.appendChild(t.render().firstChild)
 
 class Image_handler(Tag_handler):
     handled_tag = TAG_IMAGE
@@ -271,6 +280,7 @@ class Image_handler(Tag_handler):
         #print self.node
 
     def render(self):
+        print self.placeholder_name
         render_root = self.doc.createElement('root')
         if self.params.has_key(self.placeholder_name):
             images = self.params[self.placeholder_name]
@@ -457,22 +467,17 @@ def testImage_in_table():
 <table:table-cell><text:p>{table1.name}</text:p></table:table-cell>\
 <table:table-cell>\
 <text:p>\
-<draw:frame draw:name="flow_chart"><draw:image xlink:href="Pictures/asd.png" /></draw:frame>\
+<draw:frame draw:name="table1.flow_chart"><draw:image xlink:href="Pictures/asd.png" /></draw:frame>\
+<draw:frame draw:name="GARBAGE"><draw:text-box xlink:href="Pictures/asd.png" /></draw:frame>\
 </text:p>\
 </table:table-cell>\
 </table:table-row></table:table>\
 </xml>'''
     parameters = {
-            u'flow_chart' :
-                (
-                    'svbsa101k2_0.png',
-                    'svbsa101k2_1.png',
-                    'svbsa101k2_2.png',
-                ),
             u'table1' :
                 (
-                    {'id' : '1', 'name' : 'SIAM.00479', 'description' : 'Test1'},
-                    {'id' : '2', 'name' : 'SIAM.00172', 'description' : 'Test2'},
+                    {'id' : '1', 'name' : 'SIAM.00479', 'description' : 'Test1', u'flow_chart' : ['svbsa101k2_0.png']},
+                    {'id' : '2', 'name' : 'SIAM.00172', 'description' : 'Test2', u'flow_chart' : ['svbsa101k2_1.png']},
                 ),
             }
     t = Template(source, parameters)

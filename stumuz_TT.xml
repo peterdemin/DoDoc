@@ -6,45 +6,45 @@
 	<litera>0</litera>
 	<title>fcgfcjhfgc</title>
     <authors type="table">
-        <row>
+        <ROW>
             <post>Инженер</post>
             <name>Демин</name>
-        </row>
-        <row>
+        </ROW>
+        <ROW>
             <post>2</post>
             <name>Item2</name>
-        </row>
+            <flow_chart type="image">
+                <IMAGE>../DoDoc/svbsa101k2.odg</IMAGE>
+            </flow_chart>
+        </ROW>
     </authors>
-    <flow_chart type='image'>
-        <image>../DoDoc/svbsa101k2.odg</image>
-    </flow_chart>
     <param type="table">
-        <row>
+        <ROW>
             <identif>ri</identif>
             <razm>м</razm>
             <prec>0.125</prec>
             <diapazon>+-268435456</diapazon>
-        </row>
-        <row>
+        </ROW>
+        <ROW>
             <identif>vi</identif>
             <razm>м/с</razm>
             <prec>8.e-6</prec>
             <diapazon>+-16384</diapazon>
-        </row>
+        </ROW>
     </param>
     <bits type="table">
-        <row>
+        <ROW>
             <n />
             <name>qq</name>
             <word>ww</word>
-        </row>
-        <row>
+        </ROW>
+        <ROW>
             <name>dd</name>
             <word>bb</word>
-        </row>
+        </ROW>
     </bits>
     <global type="table">
-        <row>
+        <ROW>
             <n />
             <name>qq</name>
             <razm>ww</razm>
@@ -54,593 +54,10 @@
             <type>yy</type>
             <scale>uu</scale>
             <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
-        <row>
-            <n />
-            <name>qq</name>
-            <razm>ww</razm>
-            <identif>ee</identif>
-            <diap>rr</diap>
-            <prec>tt</prec>
-            <type>yy</type>
-            <scale>uu</scale>
-            <comment>ii</comment>
-        </row>
+        </ROW>
     </global>
     <local type="table">
-        <row>
+        <ROW>
             <n />
             <name>qq</name>
             <razm>ww</razm>
@@ -651,19 +68,19 @@
             <type>yy</type>
             <scale>uu</scale>
             <comment>ii</comment>
-        </row>
+        </ROW>
     </local>
     <priznak type="table">
-        <row>
+        <ROW>
             <n />
             <name>qq</name>
             <identif>ee</identif>
             <used>uu</used>
             <comment>ii</comment>
-        </row>
+        </ROW>
     </priznak>
     <const type="table">
-        <row>
+        <ROW>
             <n />
             <name>qq</name>
             <razm>ww</razm>
@@ -675,6 +92,6 @@
             <type>yy</type>
             <scale>uu</scale>
             <comment>ii</comment>
-        </row>
+        </ROW>
     </const>
 </DoDoc>
