@@ -160,15 +160,15 @@ def expandImages_in_tables(params):
             result[k] = []
             for row in v:
                 image_rows = 0
-                row['ID'] = id
-                row['AMOUNT'] = len(v)
+                row['ID'] = unicode(id)
+                row['AMOUNT'] = unicode(len(v))
                 for rk, rv in row.iteritems():
                     if is_image(rv):
                         print rk, 'in', k, len(rv)
                         image_rows = max(len(rv), image_rows)
                 if image_rows in (0, 1):
-                    row['SUB_ID'] = 1
-                    row['SUB_AMOUNT'] = 1
+                    row['SUB_ID'] = unicode(1)
+                    row['SUB_AMOUNT'] = unicode(1)
                     result[k].append(row)
                 else:
                     for image_id in range(image_rows):
@@ -181,8 +181,8 @@ def expandImages_in_tables(params):
                                     cur_row[rk] = []
                             else:
                                 cur_row[rk] = rv
-                        cur_row['SUB_ID'] = sub_id
-                        cur_row['SUB_AMOUNT'] = image_rows
+                        cur_row['SUB_ID'] = unicode(sub_id)
+                        cur_row['SUB_AMOUNT'] = unicode(image_rows)
                         result[k].append(cur_row)
                         sub_id+= 1
                 id += 1
