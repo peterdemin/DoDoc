@@ -11,7 +11,10 @@ def odg2png(input_filename, output_filename):
             soffice_process = subprocess.Popen(["soffice.exe", "-headless", "-nofirststartwizard", "-accept=socket,host=localhost,port=2002;urp;"])
             #time.sleep(5.0)
             result = odg2png_unchecked(input_filename, output_filename)
-            soffice_process.kill()
+            try:
+                soffice_process.kill()
+            except WindowsError, e:
+                pass # WindowsError (code 5) may occur, if openoffice was opened by user
             return result
         else:
             raise
