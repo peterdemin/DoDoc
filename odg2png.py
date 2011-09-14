@@ -8,7 +8,7 @@ def odg2png(input_filename, output_filename):
     except Exception, e:
         if hasattr(e, 'typeName') and (e.typeName == 'com.sun.star.connection.NoConnectException'):
             import time
-            soffice_process = subprocess.Popen(["soffice.exe", "-headless", "-nofirststartwizard", "-accept=socket,host=localhost,port=2002;urp;"])
+            soffice_process = subprocess.Popen(["soffice", "-headless", "-nofirststartwizard", "-accept=socket,host=localhost,port=2002;urp;"])
             #time.sleep(5.0)
             result = odg2png_unchecked(input_filename, output_filename)
             try:

@@ -7,6 +7,9 @@ import xml.sax
 from pprint import pprint
 
 class Parser(xml.sax.handler.ContentHandler):
+    tag_row = 'ROW'
+    tag_image = 'IMAGE'
+
     def __init__(self):
         self.tree = {}
         self.cur_name = None
@@ -15,12 +18,12 @@ class Parser(xml.sax.handler.ContentHandler):
         self.in_image = None
         self.cur_images = []
         self.image_pathes = set()
-        self.content = u''
+        self.content = ''
 
     def startElement(self, name, attrs):
-        if name == u'ROW':
+        if name == self.tag_row:
             if self.in_row:
-                print 'ERROR: Nested ROWs are not allowed!'
+                print 'ERROR: Nested %ss are not allowed!' % (self.tag_row)
                 return
             else:
                 if self.cur_name:
@@ -29,8 +32,8 @@ class Parser(xml.sax.handler.ContentHandler):
                     if not self.tree.has_key(self.in_row):
                         self.tree[self.in_row] = []
                 else:
-                    print 'ERROR: "ROW" tag name is reserved!'
-        elif name == u'IMAGE':
+                    print 'ERROR: "%s" tag name is reserved!' % (self.tag_row)
+        elif name == 'IMAGE':
             if self.cur_name:
                 self.in_image = self.cur_name
                 if self.in_row:
@@ -45,14 +48,14 @@ class Parser(xml.sax.handler.ContentHandler):
 
     def endElement(self, name):
         def safe_update(d, elem, content):
-            old_content = d.get(elem) or u''
+            old_content = d.get(elem) or ''
             if type(old_content) == unicode:
                 d[elem] = old_content + content
-        if name == u'ROW':
+        if name == self.tag_row:
             self.tree[self.in_row].append(self.cur_row)
             self.cur_name = self.in_row
             self.in_row = None
-        elif name == u'IMAGE':
+        elif name == 'IMAGE':
             self.cur_images.extend(self.__parseIMAGE())
             #print self.cur_images
         elif name == self.in_image:
@@ -80,20 +83,21 @@ class Parser(xml.sax.handler.ContentHandler):
         self.content+= text
 
     def __parseIMAGE(self):
-        if os.path.exists(self.content):
-            if os.path.splitext(self.content)[1].lower() == u'.odg':
-                return self.__parseODG(self.content)
-            elif os.path.splitext(self.content)[1].lower() == u'.png':
-                return self.__parsePNG(self.content)
+        path = self.content.decode('utf8')
+        if os.path.exists(path):
+            if os.path.splitext(path)[1].lower() == '.odg':
+                return self.__parseODG(path)
+            elif os.path.splitext(path)[1].lower() == '.png':
+                return self.__parsePNG(path)
             else:
-                print (u'Error: Only .png and .odg images are allowed: "%s"' % (self.content)).encode('cp866', 'replace')
+                print (u'Error: Only .png and .odg images are allowed: "%s"' % (path)).encode('cp866', 'replace')
         else:
-            print (u'Error: No such image file: "%s"' % (self.content)).encode('cp866', 'replace')
+            print (u'Error: No such image file: "%s"' % (path)).encode('cp866', 'replace')
         return []
 
     def __parsePNG(self, png_path):
         import shutil
-        output_filename = '/'.join(['Pictures', os.path.basename(png_path)])
+        output_filename = u'/'.join([u'Pictures', os.path.basename(png_path)])
         if not os.path.exists('Pictures'):
             os.mkdir('Pictures')
         shutil.copy2(png_path, output_filename)
@@ -101,7 +105,7 @@ class Parser(xml.sax.handler.ContentHandler):
 
     def __parseODG(self, odg_path):
         pngs = []
-        output_filename = '/'.join(['Pictures', os.path.splitext(os.path.basename(odg_path))[0] + u'.png'])
+        output_filename = u'/'.join([u'Pictures', os.path.splitext(os.path.basename(odg_path))[0] + '.png'])
         if not os.path.exists('Pictures'):
             os.mkdir('Pictures')
         import odg2png
@@ -157,8 +161,8 @@ def expandImages_in_tables(params):
                         #print rk, 'in', k, len(rv)
                         image_rows = max(len(rv), image_rows)
                 if image_rows in (0, 1):
-                    row['SUB_ID'] = unicode(1)
-                    row['SUB_AMOUNT'] = unicode(1)
+                    #row['SUB_ID'] = unicode(1)
+                    #row['SUB_AMOUNT'] = unicode(1)
                     result[k].append(row)
                 else:
                     for image_id in range(image_rows):
@@ -183,7 +187,7 @@ def expandImages_in_tables(params):
 
 def main():
     #return testImage_in_table()
-    xml_content = u'''
+    xml_content = '''
 <DoDoc>
     <approver>А.С. Сыров</approver>
     <siam_id>СИЯМ.00496-01 96 01</siam_id>
