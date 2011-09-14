@@ -280,7 +280,7 @@ class Image_handler(Tag_handler):
         #print self.node
 
     def render(self):
-        print self.placeholder_name
+        #print self.placeholder_name
         render_root = self.doc.createElement('root')
         if self.params.has_key(self.placeholder_name):
             images = self.params[self.placeholder_name]

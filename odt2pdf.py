@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 
 def odt2pdf(input_filename, output_filename):
     try:
@@ -7,9 +8,11 @@ def odt2pdf(input_filename, output_filename):
     except Exception, e:
         if hasattr(e, 'typeName') and (e.typeName == 'com.sun.star.connection.NoConnectException'):
             import time
-            os.system("start start_oo_server.bat")
-            time.sleep(5.0)
-            return odt2pdf_unchecked(input_filename, output_filename)
+            soffice_process = subprocess.Popen(["soffice.exe", "-headless", "-nofirststartwizard", "-accept=socket,host=localhost,port=2002;urp;"])
+            #time.sleep(1.0)
+            result = odt2pdf_unchecked(input_filename, output_filename)
+            soffice_process.kill()
+            return result
         else:
             raise
     return None
@@ -46,6 +49,7 @@ def odt2pdf_unchecked(input_filename, output_filename):
     document.close()
     inputprops = [
         PropertyValue('InputStream', 0, instream, 0),
+        PropertyValue('Hidden', 0, True, 0),
     ]
     del document
 

@@ -54,7 +54,7 @@ class Parser(xml.sax.handler.ContentHandler):
             self.in_row = None
         elif name == u'IMAGE':
             self.cur_images.extend(self.__parseIMAGE())
-            print self.cur_images
+            #print self.cur_images
         elif name == self.in_image:
             if self.in_row:
                 self.cur_row[self.in_image].extend(self.cur_images)
@@ -71,7 +71,8 @@ class Parser(xml.sax.handler.ContentHandler):
             if self.cur_name == name:
                 safe_update(self.tree, self.cur_name, self.content)
             else:
-                print '!=', self.cur_name, name
+                #print '!=', self.cur_name, name
+                pass
             self.cur_name = None
         self.content = u''
 
@@ -103,19 +104,8 @@ class Parser(xml.sax.handler.ContentHandler):
         output_filename = '/'.join(['Pictures', os.path.splitext(os.path.basename(odg_path))[0] + u'.png'])
         if not os.path.exists('Pictures'):
             os.mkdir('Pictures')
-        for try_two_times in (1, 2):
-            try:
-                import odg2png
-                pngs = odg2png.odg2png(odg_path, output_filename)
-            except Exception, e:
-                if e.typeName == 'com.sun.star.connection.NoConnectException':
-                    import time
-                    os.system("start start_oo_server.bat")
-                    time.sleep(5.0)
-                    continue
-                else:
-                    raise
-            break  # success occured
+        import odg2png
+        pngs = odg2png.odg2png(odg_path, output_filename)
         return pngs
 
 def parseParameters_XML(xml_content):
@@ -164,7 +154,7 @@ def expandImages_in_tables(params):
                 row['AMOUNT'] = unicode(len(v))
                 for rk, rv in row.iteritems():
                     if is_image(rv):
-                        print rk, 'in', k, len(rv)
+                        #print rk, 'in', k, len(rv)
                         image_rows = max(len(rv), image_rows)
                 if image_rows in (0, 1):
                     row['SUB_ID'] = unicode(1)

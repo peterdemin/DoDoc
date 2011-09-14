@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 
 def odg2png(input_filename, output_filename):
     try:
@@ -7,9 +8,11 @@ def odg2png(input_filename, output_filename):
     except Exception, e:
         if hasattr(e, 'typeName') and (e.typeName == 'com.sun.star.connection.NoConnectException'):
             import time
-            os.system("start start_oo_server.bat")
-            time.sleep(5.0)
-            return odg2png_unchecked(input_filename, output_filename)
+            soffice_process = subprocess.Popen(["soffice.exe", "-headless", "-nofirststartwizard", "-accept=socket,host=localhost,port=2002;urp;"])
+            #time.sleep(5.0)
+            result = odg2png_unchecked(input_filename, output_filename)
+            soffice_process.kill()
+            return result
         else:
             raise
     return None
@@ -36,7 +39,10 @@ def odg2png_unchecked(input_filename, output_filename):
     document = Document(input_filename)
     document.delete_on_close = False
     instream = InputStream(uno.ByteSequence(document.read()))
-    inputprops = [ PropertyValue('InputStream', 0, instream, 0) ]
+    inputprops = [
+                  PropertyValue('InputStream', 0, instream, 0),
+                  PropertyValue('Hidden', 0, True, 0),
+                 ]
     document.close()
     doc = desktop.loadComponentFromURL('private:stream','_blank',0, tuple(inputprops))
 
