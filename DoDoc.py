@@ -114,7 +114,7 @@ def main():
         result_path = u'%s_%s.odt' % (basefilename(template_path), basefilename(xml_path))
         print 'Using "%s" by default.' % (result_path,)
 
-    template_params = parseParameters_XML(codecs.open(xml_path, 'rb', 'utf8').read())
+    template_params = parseParameters_XML(open(xml_path, 'rb').read())
     renderTemplate(template_path, template_params, result_path)
 
 if __name__ == '__main__':
