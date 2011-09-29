@@ -1,53 +1,16 @@
 import os
-import sys
-import subprocess
 
 def odg2png(input_filename, output_filename):
-    try:
-        return odg2png_unchecked(input_filename, output_filename)
-    except Exception, e:
-        if hasattr(e, 'typeName') and (e.typeName == 'com.sun.star.connection.NoConnectException'):
-            import time
-            soffice_process = subprocess.Popen(["soffice", "-headless", "-nofirststartwizard", "-accept=socket,host=localhost,port=2002;urp;"])
-            #time.sleep(5.0)
-            result = odg2png_unchecked(input_filename, output_filename)
-            try:
-                soffice_process.kill()
-            except WindowsError, e:
-                pass # WindowsError (code 5) may occur, if openoffice was opened by user
-            return result
-        else:
-            raise
-    return None
+    from start_uno import runWithStarted_soffice
+    return runWithStarted_soffice(odg2png_unchecked, input_filename, output_filename)
 
-def odg2png_unchecked(input_filename, output_filename):
+def odg2png_unchecked(desktop, input_filename, output_filename):
     from import_uno import uno
-
-    from com.sun.star.io import IOException, XOutputStream, XSeekable, XInputStream
-    from com.sun.star.beans import PropertyValue
-
-    from OpenOffice_document import InputStream
     from OpenOffice_document import OutputStream
-    from OpenOffice_document import Document
+    from com.sun.star.beans import PropertyValue
+    from start_uno import loadDocument
 
-    OOO_CONNECTION = 'socket,host=localhost,port=2002;urp;StarOffice.ComponentContext'
-    context = uno.getComponentContext()
-    resolver = context.ServiceManager.createInstanceWithContext('com.sun.star.bridge.UnoUrlResolver', context)
-    unocontext = resolver.resolve('uno:%s' % OOO_CONNECTION)
-    unosvcmgr = unocontext.ServiceManager
-    desktop = unosvcmgr.createInstanceWithContext('com.sun.star.frame.Desktop', unocontext)
-    config = unosvcmgr.createInstanceWithContext('com.sun.star.configuration.ConfigurationProvider', unocontext)
-
-    ### Load inputfile
-    document = Document(input_filename)
-    document.delete_on_close = False
-    instream = InputStream(uno.ByteSequence(document.read()))
-    inputprops = [
-                  PropertyValue('InputStream', 0, instream, 0),
-                  PropertyValue('Hidden', 0, True, 0),
-                 ]
-    document.close()
-    doc = desktop.loadComponentFromURL('private:stream','_blank',0, tuple(inputprops))
+    doc = loadDocument(desktop, input_filename)
 
     doc_controller = doc.getCurrentController()
     draw_pages = doc.getDrawPages()
@@ -97,6 +60,7 @@ def composeOO_name(file_path):
     return u'%s10000000%08X%08X%s%s' % (dirname, width, height, checksum, ext)
 
 def main():
+    import sys
     from pprint import pprint
     input = 'svbsa101k2.odg'
     output = 'Pictures/svbsa101k2.png'

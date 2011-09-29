@@ -1,62 +1,19 @@
-import os
-import sys
-import subprocess
-
 def odt2pdf(input_filename, output_filename):
-    try:
-        return odt2pdf_unchecked(input_filename, output_filename)
-    except Exception, e:
-        if hasattr(e, 'typeName') and (e.typeName == 'com.sun.star.connection.NoConnectException'):
-            import time
-            soffice_process = subprocess.Popen(["soffice", "-headless", "-nofirststartwizard", "-accept=socket,host=localhost,port=2002;urp;"])
-            #time.sleep(1.0)
-            result = odt2pdf_unchecked(input_filename, output_filename)
-            try:
-                soffice_process.kill()
-            except WindowsError, e:
-                pass # WindowsError (code 5) may occur, if openoffice was opened by user
-            return result
-        else:
-            raise
-    return None
+    from start_uno import runWithStarted_soffice
+    return runWithStarted_soffice(odt2pdf_unchecked, input_filename, output_filename)
 
-def odt2pdf_unchecked(input_filename, output_filename):
+def odt2pdf_unchecked(desktop, input_filename, output_filename):
     from import_uno import uno
-    from com.sun.star.beans import PropertyValue
-
-    from OpenOffice_document import InputStream
     from OpenOffice_document import OutputStream
-    from OpenOffice_document import Document
+    from com.sun.star.beans import PropertyValue
+    from start_uno import loadDocument
 
-    OOO_CONNECTION = 'socket,host=localhost,port=2002;urp;StarOffice.ComponentContext'
+    doc = loadDocument(desktop, input_filename)
+
     context = uno.getComponentContext()
-    resolver = context.ServiceManager.createInstanceWithContext('com.sun.star.bridge.UnoUrlResolver', context)
-    unocontext = resolver.resolve('uno:%s' % OOO_CONNECTION)
-
-    unosvcmgr = unocontext.ServiceManager
-    desktop = unosvcmgr.createInstanceWithContext('com.sun.star.frame.Desktop', unocontext)
-    config = unosvcmgr.createInstanceWithContext('com.sun.star.configuration.ConfigurationProvider', unocontext)
-
-    #print 'unosvcmgr:', type(unosvcmgr)
-    #print u', '.join(dir(unosvcmgr))
-    #print 'desktop:', type(desktop)
-    #print u', '.join(dir(desktop))
-    #print 'config:', type(config)
-    #print u', '.join(dir(config))
-
-    document = Document(input_filename)
-    document.delete_on_close = False
-
-    ### Load inputfile
-    instream = InputStream(uno.ByteSequence(document.read()))
-    document.close()
-    inputprops = [
-        PropertyValue('InputStream', 0, instream, 0),
-        PropertyValue('Hidden', 0, True, 0),
-    ]
-    del document
-
-    doc = desktop.loadComponentFromURL('private:stream','_blank',0, tuple(inputprops))
+    dispatcher = context.ServiceManager.createInstanceWithContext('com.sun.star.frame.DispatchHelper', context)
+    frame = doc.getCurrentController().getFrame()
+    dispatcher.executeDispatch(frame, ".uno:UpdateAll", "", 0, ())
 
     fd = open(output_filename, 'wb')
     filter_name = 'writer_pdf_Export'
@@ -75,6 +32,7 @@ def odt2pdf_unchecked(input_filename, output_filename):
     fd.close()
 
 def main():
+    import sys
     input = 'Variables_variables.odt'
     output = 'Variables_variables.pdf'
     if len(sys.argv) == 3:
@@ -84,7 +42,7 @@ def main():
         print 'Usage:'
         print '    python odt2pdf input_odt_filename output_pdf_filename'
     odt2pdf(input, output)
-    print 'done'
+    #print 'done'
 
 if __name__ == '__main__':
     main()

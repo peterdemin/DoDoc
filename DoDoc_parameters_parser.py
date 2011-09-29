@@ -7,8 +7,8 @@ import xml.sax
 from pprint import pprint
 
 class Parser(xml.sax.handler.ContentHandler):
-    tag_row = 'ROW'
-    tag_image = 'IMAGE'
+    tag_row   = u'ROW'
+    tag_image = u'IMAGE'
 
     def __init__(self):
         self.tree = {}
@@ -18,12 +18,12 @@ class Parser(xml.sax.handler.ContentHandler):
         self.in_image = None
         self.cur_images = []
         self.image_pathes = set()
-        self.content = ''
+        self.content = u''
 
     def startElement(self, name, attrs):
         if name == self.tag_row:
             if self.in_row:
-                print 'ERROR: Nested %ss are not allowed!' % (self.tag_row)
+                print u'ERROR: Nested %ss are not allowed!' % (self.tag_row)
                 return
             else:
                 if self.cur_name:
@@ -32,8 +32,8 @@ class Parser(xml.sax.handler.ContentHandler):
                     if not self.tree.has_key(self.in_row):
                         self.tree[self.in_row] = []
                 else:
-                    print 'ERROR: "%s" tag name is reserved!' % (self.tag_row)
-        elif name == 'IMAGE':
+                    print u'ERROR: "%s" tag name is reserved!' % (self.tag_row)
+        elif name == self.tag_image:
             if self.cur_name:
                 self.in_image = self.cur_name
                 if self.in_row:
@@ -41,21 +41,27 @@ class Parser(xml.sax.handler.ContentHandler):
                 else:
                     self.tree[self.in_image] = []
             else:
-                print 'ERROR: "IMAGE" tag name is reserved!'
+                print u'ERROR: "%s" tag name is reserved!' % (self.tag_image)
         else:
+            if self.in_row:
+                if self.cur_row.has_key(name):
+                    raise ValueError(u'Key "%s" allready exists in %s "%s"' % (name, self.tag_row, self.in_row))
+            elif self.tree.has_key(name):
+                raise ValueError(u'Key "%s" allready exists' % (name))
             self.cur_name = name
         self.content = u''
 
     def endElement(self, name):
         def safe_update(d, elem, content):
-            old_content = d.get(elem) or ''
+            assert(type(content) == unicode)
+            old_content = d.get(elem) or u''
             if type(old_content) == unicode:
                 d[elem] = old_content + content
         if name == self.tag_row:
             self.tree[self.in_row].append(self.cur_row)
             self.cur_name = self.in_row
             self.in_row = None
-        elif name == 'IMAGE':
+        elif name == self.tag_image:
             self.cur_images.extend(self.__parseIMAGE())
             #print self.cur_images
         elif name == self.in_image:
@@ -69,7 +75,7 @@ class Parser(xml.sax.handler.ContentHandler):
             assert(self.in_row == None)
             self.cur_name = None
         elif self.in_row:
-            self.cur_row[self.cur_name] = self.content
+            safe_update(self.cur_row, self.cur_name, self.content)
         else:
             if self.cur_name == name:
                 safe_update(self.tree, self.cur_name, self.content)
@@ -83,11 +89,11 @@ class Parser(xml.sax.handler.ContentHandler):
         self.content+= text
 
     def __parseIMAGE(self):
-        path = self.content.decode('utf8')
+        path = self.content
         if os.path.exists(path):
-            if os.path.splitext(path)[1].lower() == '.odg':
+            if os.path.splitext(path)[1].lower() == u'.odg':
                 return self.__parseODG(path)
-            elif os.path.splitext(path)[1].lower() == '.png':
+            elif os.path.splitext(path)[1].lower() == u'.png':
                 return self.__parsePNG(path)
             else:
                 print (u'Error: Only .png and .odg images are allowed: "%s"' % (path)).encode('cp866', 'replace')

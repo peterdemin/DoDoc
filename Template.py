@@ -292,7 +292,10 @@ class Image_handler(Tag_handler):
                 iterNode(self.doc, self.doc.firstChild, r)
                 render_root.appendChild(r.doc.firstChild)
                 inserted_xlinks.append(image)
-            self.master.image_replacements[self.marker_xlink] = inserted_xlinks
+            if self.master.image_replacements.has_key(self.marker_xlink):
+                self.master.image_replacements[self.marker_xlink]+= inserted_xlinks
+            else:
+                self.master.image_replacements[self.marker_xlink] = inserted_xlinks
         else:
             #print 'NO KEY', self.placeholder_name
             render_root.appendChild(self.doc.firstChild)
@@ -301,8 +304,8 @@ class Image_handler(Tag_handler):
 
 class Condition_block_handler(Tag_handler):
     handled_tag = TAG_SECTION
-    have = re.compile(ur'(?iu)have_([a-z0-9_]+)(?: .+)?')
-    have_no = re.compile(ur'(?iu)have_no_([a-z0-9_]+)(?: .+)?')
+    have = re.compile(ur'(?iu)have_([a-z0-9_\.]+)(?: .+)?')
+    have_no = re.compile(ur'(?iu)have_no_([a-z0-9_\.]+)(?: .+)?')
 
     def __init__(self, master, params):
         super(Condition_block_handler, self).__init__(master, params)
@@ -331,6 +334,8 @@ class Condition_block_handler(Tag_handler):
                             return None
                     else:
                         return None
+            # rename section to omit further checks
+            root.firstChild.attributes[SECTION_NAME].value = u'had_' + root.firstChild.attributes[SECTION_NAME].value
         return root
 
 class Parameters_finder(object):
