@@ -2,9 +2,107 @@ from import_uno import uno
 import unohelper
 import zipfile
 import os
-
 from com.sun.star.io import IOException, XOutputStream, XSeekable, XInputStream
 from com.sun.star.beans import PropertyValue
+from com.sun.star.connection import NoConnectException
+
+def progress(message):
+    #if type(message) == unicode:
+    #    print message.encode('cp866', 'replace')
+    #else:
+    #    print message
+    pass
+
+def error(message):
+    if type(message) == unicode:
+        print message.encode('cp866', 'replace')
+    else:
+        print message
+
+class OpenOffice(object):
+    def __init__(self):
+        self.component_context = uno.getComponentContext()
+        self.url_resolver = self.component_context.ServiceManager.createInstanceWithContext('com.sun.star.bridge.UnoUrlResolver', self.component_context)
+        self.connected_context = None
+        self.service_started_by_me = False
+
+    def connect(self):
+        start_attempted = False
+        connection_attempts = 0
+        while not self.connected_context:
+            try:
+                progress('Attempting to connect...')
+                connection_attempts+= 1
+                self.connected_context = self.resolveURL('uno:socket,host=localhost,port=2002;urp;StarOffice.ComponentContext')
+                progress('Connected.')
+            except NoConnectException, e:
+                progress('Connection failed.')
+                if start_attempted:
+                    if connection_attempts < 20:
+                        import time
+                        time.sleep(1.0)
+                        progress('Waiting 1 second.')
+                    else:
+                        error('soffice service started, but connection could not be made.')
+                else:
+                    progress('Starting service...')
+                    if self.startService():
+                        start_attempted = True
+                    else:
+                        return False
+        unosvcmgr = self.connected_context.ServiceManager
+        self.desktop    = unosvcmgr.createInstanceWithContext('com.sun.star.frame.Desktop',         self.connected_context)
+        self.dispatcher = unosvcmgr.createInstanceWithContext('com.sun.star.frame.DispatchHelper',  self.connected_context)
+        return True
+
+    def disconnect(self):
+        if self.service_started_by_me:
+            self.stopService()
+
+    def open(self, filename):
+        try:
+            instream = InputStream(uno.ByteSequence(open(filename, 'rb').read()))
+            inputprops = [
+                PropertyValue('InputStream', 0, instream, 0),
+                PropertyValue('Hidden', 0, True, 0),
+            ]
+            self.doc = self.desktop.loadComponentFromURL('private:stream', '_blank', 0, tuple(inputprops))
+            progress('Opened document "%s"' % (filename))
+            return True
+        except IOError, e:
+            error(u'Error: Can not open input file: "%s"' % (os.path.abspath(filename)))
+            return False
+
+    def close(self):
+        self.doc.dispose()
+        progress('Disposed document.')
+        pass
+
+    def startService(self):
+        import subprocess
+        try:
+            soffice = subprocess.Popen(["soffice", "-headless", "-nofirststartwizard", "-accept=socket,host=localhost,port=2002;urp;"])
+            if None == soffice.poll():
+                self.service_started_by_me = True
+                progress('Service polled ok')
+                return True
+            else:
+                error('Error: soffice process unexpectadly terminated.')
+                return False
+        except OSError, e:
+            error('Error: Can not start soffice (probably system path not set properly)')
+            return False
+
+    def stopService(self):
+        progress('Attempting to terminate soffice...')
+        try:
+            self.desktop.terminate()
+            progress('soffice terminated.')
+        except:
+            progress('soffice termination failed.')
+
+    def resolveURL(self, url):
+        return self.url_resolver.resolve('uno:socket,host=localhost,port=2002;urp;StarOffice.ComponentContext')
 
 class InputStream(XSeekable, XInputStream, unohelper.Base):
       def __init__(self, seq):
@@ -62,19 +160,6 @@ class OutputStream(unohelper.Base, XOutputStream):
 
     def flush(self):
         pass
-
-class Document(file):
-    def __init__(self, filename, mode='rb', buffering=1, delete_on_close=True):
-        file.__init__(self, filename, mode, buffering)
-        self.delete_on_close = delete_on_close
-
-    def delete(self):
-        os.unlink(self.name)
-
-    def close(self):
-        file.close(self)
-        if self.delete_on_close:
-            self.delete()
 
 def getTree(path):
     result = []

@@ -7,7 +7,6 @@ import sys
 import codecs
 import shutil
 from pprint import pprint
-from optparse import OptionParser
 
 import xml.sax.handler
 import xml.sax
@@ -91,7 +90,18 @@ def cleanPictures(odt_path, to_delete):
                 #print '~', pic_path
                 pass
 
+def DoDoc(template_path, xml_path, result_path):
+    try:
+        open(result_path, "ab").close()
+    except IOError, e:
+        print (u'ERROR: Can not open output file: "%s"' % (os.path.abspath(result_path))).encode('cp866', 'replace')
+        return
+    else:
+        template_params = parseParameters_XML(open(xml_path, 'rb').read())
+        renderTemplate(template_path, template_params, result_path)
+
 def main():
+    from optparse import OptionParser
     opts = OptionParser()
     opts.add_option("-t", "--template", dest="template_path",   help="input ODT template file path")
     opts.add_option("-x", "--xml",      dest="xml_path",        help="input XML parameters file path")
@@ -111,11 +121,10 @@ def main():
         result_path = options.result_path
     else:
         print 'WARNING: result path not specified. Use --help for command line arguments help.'
-        result_path = u'%s_%s.odt' % (basefilename(template_path), basefilename(xml_path))
+        result_path = os.path.join(os.path.dirname(xml_path), u'%s_%s.odt' % (basefilename(template_path), basefilename(xml_path)))
         print 'Using "%s" by default.' % (result_path,)
 
-    template_params = parseParameters_XML(open(xml_path, 'rb').read())
-    renderTemplate(template_path, template_params, result_path)
+    DoDoc(template_path, xml_path, result_path)
 
 if __name__ == '__main__':
     main()

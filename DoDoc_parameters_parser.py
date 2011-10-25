@@ -7,6 +7,8 @@ import xml.sax
 from pprint import pprint
 
 class Parser(xml.sax.handler.ContentHandler):
+    tag_csv   = u'ROW_FROM_CSV'
+    tag_cdr   = u'ROW_FROM_CDR'
     tag_row   = u'ROW'
     tag_image = u'IMAGE'
 
@@ -19,8 +21,11 @@ class Parser(xml.sax.handler.ContentHandler):
         self.cur_images = []
         self.image_pathes = set()
         self.content = u''
+        self.odg2png = None
+        self.level = 0
 
     def startElement(self, name, attrs):
+        self.level+= 1
         if name == self.tag_row:
             if self.in_row:
                 print u'ERROR: Nested %ss are not allowed!' % (self.tag_row)
@@ -33,6 +38,30 @@ class Parser(xml.sax.handler.ContentHandler):
                         self.tree[self.in_row] = []
                 else:
                     print u'ERROR: "%s" tag name is reserved!' % (self.tag_row)
+        elif name == self.tag_csv:
+            if self.in_row:
+                print u'ERROR: Nested %ss are not allowed!' % (self.tag_row)
+                return
+            if self.cur_name:
+                self.in_row = self.cur_name
+                self.cur_row = {}
+                if not self.tree.has_key(self.in_row):
+                    self.tree[self.in_row] = []
+                self.__parseCSV(attrs)
+            else:
+                print u'ERROR: "%s" tag name is reserved!' % (self.tag_csv)
+        elif name == self.tag_cdr:
+            if self.in_row:
+                print u'ERROR: Nested %ss are not allowed!' % (self.tag_row)
+                return
+            if self.cur_name:
+                self.in_row = self.cur_name
+                self.cur_row = {}
+                if not self.tree.has_key(self.in_row):
+                    self.tree[self.in_row] = []
+                self.__parseCDR(attrs)
+            else:
+                print u'ERROR: "%s" tag name is reserved!' % (self.tag_cdr)
         elif name == self.tag_image:
             if self.cur_name:
                 self.in_image = self.cur_name
@@ -52,6 +81,7 @@ class Parser(xml.sax.handler.ContentHandler):
         self.content = u''
 
     def endElement(self, name):
+        self.level-= 1
         def safe_update(d, elem, content):
             assert(type(content) == unicode)
             old_content = d.get(elem) or u''
@@ -59,6 +89,12 @@ class Parser(xml.sax.handler.ContentHandler):
                 d[elem] = old_content + content
         if name == self.tag_row:
             self.tree[self.in_row].append(self.cur_row)
+            self.cur_name = self.in_row
+            self.in_row = None
+        elif name == self.tag_csv:
+            self.cur_name = self.in_row
+            self.in_row = None
+        elif name == self.tag_cdr:
             self.cur_name = self.in_row
             self.in_row = None
         elif name == self.tag_image:
@@ -84,6 +120,9 @@ class Parser(xml.sax.handler.ContentHandler):
                 pass
             self.cur_name = None
         self.content = u''
+        if self.level == 0:
+            if self.odg2png:
+                self.odg2png.disconnect()
 
     def characters(self, text):
         self.content+= text
@@ -114,9 +153,81 @@ class Parser(xml.sax.handler.ContentHandler):
         output_filename = u'/'.join([u'Pictures', os.path.splitext(os.path.basename(odg_path))[0] + '.png'])
         if not os.path.exists('Pictures'):
             os.mkdir('Pictures')
-        import odg2png
-        pngs = odg2png.odg2png(odg_path, output_filename)
+        if not self.odg2png:
+            import odg2png
+            self.odg2png = odg2png.Odg2png()
+            self.odg2png.connect()
+        if self.odg2png.open(odg_path):
+            pngs = self.odg2png.savePNG(output_filename)
+            self.odg2png.close()
         return pngs
+
+    def __parseCSV(self, attrs):
+        if attrs.has_key(u'filename'):
+            if os.path.exists(attrs[u'filename']):
+                if attrs.has_key(u'divider'):
+                    column_divider = attrs[u'divider']
+                else:
+                    column_divider = u';'
+                rows = readFile(attrs[u'filename']).splitlines()
+                for row in rows:
+                    columns = row.split(column_divider)
+                    self.cur_row = dict([(unicode(i+1), c) for i, c in enumerate(columns)])
+                    self.tree[self.in_row].append(self.cur_row)
+            else:
+                print (u'Error: No such table file: "%s"' % (attrs[u'filename'])).encode('cp866', 'replace')
+        else:
+            print (u'Error in "%s": No table filename specified' % (self.tag_csv)).encode('cp866', 'replace')
+
+    def __parseCDR(self, attrs):
+        import re
+        re_row_divider = re.compile(ur'[\+\-]{20,}')
+        divider = u'¦'
+        if attrs.has_key(u'filename'):
+            if os.path.exists(attrs[u'filename']):
+                first_row = True
+                rows = [a.strip() for a in readFile(attrs[u'filename']).splitlines()]
+                self.cur_row = {}
+                for row in rows:
+                    if row.startswith(divider):
+                        columns = row.split(divider)
+                        if len(columns) == 3 and re_row_divider.match(columns[1]):
+                            if len(self.cur_row.keys()):
+                                if first_row:
+                                    first_row = False
+                                else:
+                                    self.tree[self.in_row].append(self.cur_row)
+                            self.cur_row = {}
+                        elif len(columns) >= 3:
+                            for i, col in enumerate(columns[1:-1]):
+                                id = unicode(i+1)
+                                self.cur_row[id] = (self.cur_row.get(id) or u'') + u' ' + col.strip()
+                    else:
+                        first_row = True
+            else:
+                print (u'Error: No such table file: "%s"' % (attrs[u'filename'])).encode('cp866', 'replace')
+        else:
+            print (u'Error in "%s": No table filename specified' % (self.tag_csv)).encode('cp866', 'replace')
+
+def readFile(filename, forced_encoding = None):
+    import codecs
+    charmaps = ['cp1251', 'cp866', 'utf8']
+    if forced_encoding:
+        charmaps = [forced_encoding] + charmaps
+        forced_encoding = None
+    for cmap in charmaps:
+        try:
+            content = codecs.open(filename, 'r', cmap).read()
+        except UnicodeDecodeError:
+            continue
+        except TypeError, e:
+            print u'readFile() TypeError:'
+            print u'Filename: "%s"' % (filename)
+            print u'Charmap:  "%s"' % (cmap)
+            raise e
+        else:
+            return content
+    raise UnicodeDecodeError
 
 def parseParameters_XML(xml_content):
     p = Parser()
@@ -213,6 +324,9 @@ def main():
             </flow_chart>
         </ROW>
     </authors>
+    <csv>
+        <ROW_FROM_CSV filename="example.csv"/>
+    </csv>
     <flow_chart type='image'>
         <IMAGE>1.png</IMAGE>
         <IMAGE>2.png</IMAGE>
