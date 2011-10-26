@@ -7,16 +7,18 @@ import xml.sax
 from pprint import pprint
 
 class Parser(xml.sax.handler.ContentHandler):
-    tag_csv   = u'ROW_FROM_CSV'
-    tag_cdr   = u'ROW_FROM_CDR'
+    tag_csv   = u'ROWS_FROM_CSV'
+    tag_cdr   = u'ROWS_FROM_CDR'
     tag_row   = u'ROW'
     tag_image = u'IMAGE'
 
     def __init__(self):
         self.tree = {}
         self.cur_name = None
-        self.in_row = None
-        self.cur_row = None
+        self.table_names = []   # nested tables names
+        self.tables = []        # nested tables
+        self.cur_row = {}       # current row elements
+        self.cur_table = []     # current rows list
         self.in_image = None
         self.cur_images = []
         self.image_pathes = set()
@@ -24,55 +26,65 @@ class Parser(xml.sax.handler.ContentHandler):
         self.odg2png = None
         self.level = 0
 
+    def pushTable(self):
+        if len(self.table_names):
+            self.cur_table.append(self.cur_row)
+            self.tables.append(self.cur_table)
+            self.cur_table = []
+            self.cur_row = {}
+
+    def popTable(self):
+        if len(self.tables):
+            closed_table = self.cur_table
+            self.cur_table = self.tables[-1]
+            self.cur_row = self.cur_table[-1]
+            self.cur_row[self.table_names[-1]] = closed_table
+            self.tables.pop(-1)
+            self.table_names.pop(-1)
+            self.cur_table.pop(-1)
+        else:
+            self.tree[self.table_names[-1]] = self.cur_table
+            self.table_names.pop(-1)
+            self.cur_table = []
+            self.cur_row = {}
+
     def startElement(self, name, attrs):
         self.level+= 1
         if name == self.tag_row:
-            if self.in_row:
-                print u'ERROR: Nested %ss are not allowed!' % (self.tag_row)
-                return
-            else:
-                if self.cur_name:
-                    self.in_row = self.cur_name
-                    self.cur_row = {}
-                    if not self.tree.has_key(self.in_row):
-                        self.tree[self.in_row] = []
-                else:
-                    print u'ERROR: "%s" tag name is reserved!' % (self.tag_row)
-        elif name == self.tag_csv:
-            if self.in_row:
-                print u'ERROR: Nested %ss are not allowed!' % (self.tag_row)
-                return
             if self.cur_name:
-                self.in_row = self.cur_name
+                if len(self.table_names) == 0 or (self.cur_name != self.table_names[-1]):
+                    self.pushTable()
+                    self.table_names.append(self.cur_name)
                 self.cur_row = {}
-                if not self.tree.has_key(self.in_row):
-                    self.tree[self.in_row] = []
+            else:
+                raise ValueError(u'ERROR: "%s" tag name is reserved!' % (self.tag_row))
+        elif name == self.tag_csv:
+            if self.cur_name:
+                if len(self.table_names) == 0 or (self.cur_name != self.table_names[-1]):
+                    self.pushTable()
+                    self.table_names.append(self.cur_name)
                 self.__parseCSV(attrs)
             else:
                 print u'ERROR: "%s" tag name is reserved!' % (self.tag_csv)
         elif name == self.tag_cdr:
-            if self.in_row:
-                print u'ERROR: Nested %ss are not allowed!' % (self.tag_row)
-                return
             if self.cur_name:
-                self.in_row = self.cur_name
-                self.cur_row = {}
-                if not self.tree.has_key(self.in_row):
-                    self.tree[self.in_row] = []
+                if len(self.table_names) == 0 or (self.cur_name != self.table_names[-1]):
+                    self.pushTable()
+                    self.table_names.append(self.cur_name)
                 self.__parseCDR(attrs)
             else:
-                print u'ERROR: "%s" tag name is reserved!' % (self.tag_cdr)
+                print u'ERROR: "%s" tag name is reserved!' % (self.tag_csv)
         elif name == self.tag_image:
             if self.cur_name:
                 self.in_image = self.cur_name
-                if self.in_row:
+                if len(self.table_names):
                     self.cur_row[self.in_image] = []
                 else:
                     self.tree[self.in_image] = []
             else:
                 print u'ERROR: "%s" tag name is reserved!' % (self.tag_image)
         else:
-            if self.in_row:
+            if len(self.table_names):
                 if self.cur_row.has_key(name):
                     raise ValueError(u'Key "%s" allready exists in %s "%s"' % (name, self.tag_row, self.in_row))
             elif self.tree.has_key(name):
@@ -88,36 +100,28 @@ class Parser(xml.sax.handler.ContentHandler):
             if type(old_content) == unicode:
                 d[elem] = old_content + content
         if name == self.tag_row:
-            self.tree[self.in_row].append(self.cur_row)
-            self.cur_name = self.in_row
-            self.in_row = None
+            self.cur_table.append(self.cur_row)
+            self.cur_name = self.table_names[-1]
+        elif len(self.table_names) and (name == self.table_names[-1]):
+            self.popTable()
         elif name == self.tag_csv:
-            self.cur_name = self.in_row
-            self.in_row = None
+            self.cur_name = self.table_names[-1]
         elif name == self.tag_cdr:
-            self.cur_name = self.in_row
-            self.in_row = None
+            self.cur_name = self.table_names[-1]
         elif name == self.tag_image:
             self.cur_images.extend(self.__parseIMAGE())
-            #print self.cur_images
         elif name == self.in_image:
-            if self.in_row:
+            if len(self.table_names):
                 self.cur_row[self.in_image].extend(self.cur_images)
             else:
                 self.tree[self.in_image].extend(self.cur_images)
             self.in_image = None
             self.cur_images = []
-        elif name == self.in_row:
-            assert(self.in_row == None)
-            self.cur_name = None
-        elif self.in_row:
-            safe_update(self.cur_row, self.cur_name, self.content)
+        elif len(self.table_names):
+            safe_update(self.cur_row, name, self.content)
         else:
             if self.cur_name == name:
-                safe_update(self.tree, self.cur_name, self.content)
-            else:
-                #print '!=', self.cur_name, name
-                pass
+                safe_update(self.tree, name, self.content)
             self.cur_name = None
         self.content = u''
         if self.level == 0:
@@ -173,7 +177,7 @@ class Parser(xml.sax.handler.ContentHandler):
                 for row in rows:
                     columns = row.split(column_divider)
                     self.cur_row = dict([(unicode(i+1), c) for i, c in enumerate(columns)])
-                    self.tree[self.in_row].append(self.cur_row)
+                    self.cur_table.append(self.cur_row)
             else:
                 print (u'Error: No such table file: "%s"' % (attrs[u'filename'])).encode('cp866', 'replace')
         else:
@@ -196,7 +200,7 @@ class Parser(xml.sax.handler.ContentHandler):
                                 if first_row:
                                     first_row = False
                                 else:
-                                    self.tree[self.in_row].append(self.cur_row)
+                                    self.cur_table.append(self.cur_row)
                             self.cur_row = {}
                         elif len(columns) >= 3:
                             for i, col in enumerate(columns[1:-1]):
@@ -232,15 +236,8 @@ def readFile(filename, forced_encoding = None):
 def parseParameters_XML(xml_content):
     p = Parser()
     xml.sax.parseString(xml_content, p)
-    return expandImages_in_tables(p.tree)
-
-def testImage_in_table():
-    params = { u'table' : [ { u'fc1' : [u'1.png', u'2.png'],            u'fc2' : [u'3.png', u'4.png', u'5.png'] },
-                            { u'fc1' : [u'6.png', u'7.png', u'8.png'],  u'fc2' : [u'9.png'] },
-                            { u'a' : u'aa', u'b' : u'bb' },
-                          ],
-             }
-    pprint(expandImages_in_tables(params))
+    #return expandImages_in_tables(p.tree)
+    return p.tree
 
 def is_table(value):
     if type(value) == list:
@@ -302,36 +299,50 @@ def expandImages_in_tables(params):
             result[k] = v
     return result
 
+def testImage_in_table():
+    params = { u'table' : [ { u'fc1' : [u'1.png', u'2.png'],            u'fc2' : [u'3.png', u'4.png', u'5.png'] },
+                            { u'fc1' : [u'6.png', u'7.png', u'8.png'],  u'fc2' : [u'9.png'] },
+                            { u'a' : u'aa', u'b' : u'bb' },
+                          ],
+             }
+    pprint(expandImages_in_tables(params))
+
 def main():
     #return testImage_in_table()
     xml_content = '''
 <DoDoc>
     <approver>А.С. Сыров</approver>
     <siam_id>СИЯМ.00496-01 96 01</siam_id>
-    <authors type="table">
+    <authors>
         <ROW>
-            <position>Инженер</position>
-            <name>Demin
-            Peter
-            Evgenievich</name>
+            <a>1</a>
         </ROW>
         <ROW>
-            <position>2</position>
-            <name>Item2</name>
+            <a>2</a>
+            <arguments>
+                <ROW>
+                    <b>4</b>
+                </ROW>
+                <ROW>
+                    <b>5</b>
+                </ROW>
+                <ROW>
+                    <b>6</b>
+                </ROW>
+            </arguments>
+        </ROW>
+        <ROW>
+            <a>3</a>
             <flow_chart type='image'>
                 <IMAGE>1.png</IMAGE>
-                <IMAGE>1.png</IMAGE>
+                <IMAGE>2.png</IMAGE>
             </flow_chart>
         </ROW>
+        <ROWS_FROM_CSV filename="example.csv"/>
     </authors>
-    <csv>
-        <ROW_FROM_CSV filename="example.csv"/>
-    </csv>
-    <flow_chart type='image'>
-        <IMAGE>1.png</IMAGE>
-        <IMAGE>2.png</IMAGE>
-    </flow_chart>
+    <test>TEST</test>
 </DoDoc>'''
+
     pprint(parseParameters_XML(xml_content))
 
 if __name__ == '__main__':
