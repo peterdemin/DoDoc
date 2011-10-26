@@ -7,8 +7,8 @@ import xml.sax
 from pprint import pprint
 
 class Parser(xml.sax.handler.ContentHandler):
-    tag_csv   = u'ROW_FROM_CSV'
-    tag_cdr   = u'ROW_FROM_CDR'
+    tag_csv   = u'ROWS_FROM_CSV'
+    tag_cdr   = u'ROWS_FROM_CDR'
     tag_row   = u'ROW'
     tag_image = u'IMAGE'
 
@@ -52,40 +52,28 @@ class Parser(xml.sax.handler.ContentHandler):
         self.level+= 1
         if name == self.tag_row:
             if self.cur_name:
-                if len(self.table_names) and (self.cur_name == self.table_names[-1]):
-                    # another row in existing table
-                    pass
-                else:
-                    # new table (may be nested)
+                if len(self.table_names) == 0 or (self.cur_name != self.table_names[-1]):
                     self.pushTable()
                     self.table_names.append(self.cur_name)
                 self.cur_row = {}
             else:
                 raise ValueError(u'ERROR: "%s" tag name is reserved!' % (self.tag_row))
-        #elif name == self.tag_csv:
-        #    if self.in_row:
-        #        print u'ERROR: Nested %ss are not allowed!' % (self.tag_row)
-        #        return
-        #    if self.cur_name:
-        #        self.in_row = self.cur_name
-        #        self.cur_row = {}
-        #        if not self.tree.has_key(self.in_row):
-        #            self.tree[self.in_row] = []
-        #        self.__parseCSV(attrs)
-        #    else:
-        #        print u'ERROR: "%s" tag name is reserved!' % (self.tag_csv)
-        #elif name == self.tag_cdr:
-        #    if self.in_row:
-        #        print u'ERROR: Nested %ss are not allowed!' % (self.tag_row)
-        #        return
-        #    if self.cur_name:
-        #        self.in_row = self.cur_name
-        #        self.cur_row = {}
-        #        if not self.tree.has_key(self.in_row):
-        #            self.tree[self.in_row] = []
-        #        self.__parseCDR(attrs)
-        #    else:
-        #        print u'ERROR: "%s" tag name is reserved!' % (self.tag_cdr)
+        elif name == self.tag_csv:
+            if self.cur_name:
+                if len(self.table_names) == 0 or (self.cur_name != self.table_names[-1]):
+                    self.pushTable()
+                    self.table_names.append(self.cur_name)
+                self.__parseCSV(attrs)
+            else:
+                print u'ERROR: "%s" tag name is reserved!' % (self.tag_csv)
+        elif name == self.tag_cdr:
+            if self.cur_name:
+                if len(self.table_names) == 0 or (self.cur_name != self.table_names[-1]):
+                    self.pushTable()
+                    self.table_names.append(self.cur_name)
+                self.__parseCDR(attrs)
+            else:
+                print u'ERROR: "%s" tag name is reserved!' % (self.tag_csv)
         elif name == self.tag_image:
             if self.cur_name:
                 self.in_image = self.cur_name
@@ -113,19 +101,15 @@ class Parser(xml.sax.handler.ContentHandler):
                 d[elem] = old_content + content
         if name == self.tag_row:
             self.cur_table.append(self.cur_row)
-            self.cur_row = {}
             self.cur_name = self.table_names[-1]
         elif len(self.table_names) and (name == self.table_names[-1]):
             self.popTable()
         elif name == self.tag_csv:
-            self.cur_name = self.in_row
-            self.in_row = None
+            self.cur_name = self.table_names[-1]
         elif name == self.tag_cdr:
-            self.cur_name = self.in_row
-            self.in_row = None
+            self.cur_name = self.table_names[-1]
         elif name == self.tag_image:
             self.cur_images.extend(self.__parseIMAGE())
-            #print self.cur_images
         elif name == self.in_image:
             if len(self.table_names):
                 self.cur_row[self.in_image].extend(self.cur_images)
@@ -138,9 +122,6 @@ class Parser(xml.sax.handler.ContentHandler):
         else:
             if self.cur_name == name:
                 safe_update(self.tree, name, self.content)
-            #else:
-            #    print '!=', self.cur_name, name
-            #    pass
             self.cur_name = None
         self.content = u''
         if self.level == 0:
@@ -196,7 +177,7 @@ class Parser(xml.sax.handler.ContentHandler):
                 for row in rows:
                     columns = row.split(column_divider)
                     self.cur_row = dict([(unicode(i+1), c) for i, c in enumerate(columns)])
-                    self.tree[self.in_row].append(self.cur_row)
+                    self.cur_table.append(self.cur_row)
             else:
                 print (u'Error: No such table file: "%s"' % (attrs[u'filename'])).encode('cp866', 'replace')
         else:
@@ -219,7 +200,7 @@ class Parser(xml.sax.handler.ContentHandler):
                                 if first_row:
                                     first_row = False
                                 else:
-                                    self.tree[self.in_row].append(self.cur_row)
+                                    self.cur_table.append(self.cur_row)
                             self.cur_row = {}
                         elif len(columns) >= 3:
                             for i, col in enumerate(columns[1:-1]):
@@ -356,10 +337,8 @@ def main():
                 <IMAGE>1.png</IMAGE>
                 <IMAGE>2.png</IMAGE>
             </flow_chart>
-            <csv>
-                <ROW_FROM_CSV filename="example.csv"/>
-            </csv>
         </ROW>
+        <ROWS_FROM_CSV filename="example.csv"/>
     </authors>
     <test>TEST</test>
 </DoDoc>'''
