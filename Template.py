@@ -23,7 +23,7 @@ def iterNode(doc, node, callback):
     if node.nodeType == node.TEXT_NODE:
         callback.characters(node.wholeText)
     else:
-        #print node.tagName
+        #print 'iterNode', node.tagName
         callback.startElement(node.tagName, node.attributes)
         if node.hasChildNodes():
             for child in node.childNodes:
@@ -56,6 +56,7 @@ class Template_handler(xml.sax.handler.ContentHandler):
         self.available_handlers = [Row_handler, Image_handler, Condition_block_handler]
         self.handler = None
         self.do_not_handle = set()
+        self.do_not_handle_once = set()
         self.image_replacements = {}
 
     def startElement(self, name, attrs):
@@ -65,12 +66,16 @@ class Template_handler(xml.sax.handler.ContentHandler):
         else:
             for h in self.available_handlers:
                 if name == h.handled_tag:
-                    if name not in self.do_not_handle:
-                        self.handler = h(self, self.params)
-                        self.handler.startElement(name, attrs)
-                    else:
+                    if name in self.do_not_handle:
+                        #self.do_not_handle.remove(name)
                         #print 'ignore', name
                         break
+                    elif name in self.do_not_handle_once:
+                        self.do_not_handle_once.remove(name)
+                        break
+                    else:
+                        self.handler = h(self, self.params)
+                        self.handler.startElement(name, attrs)
                     return
             if self.node:
                 self.node = self.node.appendChild(self.doc.createElement(name))
@@ -80,6 +85,7 @@ class Template_handler(xml.sax.handler.ContentHandler):
             setAttributes(self.doc, self.node, attrs)
 
     def endElement(self, name):
+        #print 'END', self.node
         if self.handler:
             self.handler.endElement(name)
             if self.handler.isDone():
@@ -102,7 +108,8 @@ class Template_handler(xml.sax.handler.ContentHandler):
             self.handler = None
             for child in rendered_root.childNodes:
                 iterNode(self.doc, child, self)
-            self.do_not_handle.remove(handled_tag)
+            if handled_tag in self.do_not_handle:
+                self.do_not_handle.remove(handled_tag)
         else:
             self.handler = None
 
@@ -193,27 +200,30 @@ class Row_handler(Tag_handler):
         pf = Parameters_finder()
         iterNode(self.doc, self.doc.firstChild, pf)
         tables_used = set()
+        #print 'pf.parameters', pf.parameters
         for param in pf.parameters:
-            data = param.split('.')
+            data = param.rsplit('.', 1)
             if len(data) == 2:
-                tables_used.add(param.split('.')[0])
+                tables_used.add(data[0])
         self.render_root = self.doc.createElement('root')
+        #print 'tables_used', tables_used
         if len(tables_used):
             for t in tables_used:
                 if self.params.has_key(t):
                     for lines in self.params[t]:
                         row_dict = {}
+                        #print 'lines', lines
                         for k, v in lines.iteritems():
                             row_dict['%s.%s' % (t, k)] = v
-                        #pprint(row_dict)
                         self.renderRow(row_dict)
         else:
             self.renderRow({})
         return self.render_root
 
     def renderRow(self, params):
+        #print 'renderRow with', params
         t = Template_handler(params)
-        t.do_not_handle.add(TAG_ROW)
+        t.do_not_handle_once.add(self.handled_tag)
         iterNode(self.doc, self.doc.firstChild, t)
         for k, v in t.image_replacements.iteritems():
             if self.master.image_replacements.has_key(k):
@@ -277,7 +287,6 @@ class Image_handler(Tag_handler):
             if self.omit_ends:
                 return
         self.node = self.node.parentNode
-        #print self.node
 
     def render(self):
         #print self.placeholder_name
@@ -493,12 +502,51 @@ def testImage_in_table():
     rendered_content_xml = t.render()
     print rendered_content_xml
 
+def testNested_table():
+    source = u'<xml><table:table>\
+<table:table-row>\
+<table:table-cell><text:p>{a.1}</text:p></table:table-cell>\
+<table:table-cell>\
+<table:table>\
+<table:table-row>\
+<table:table-cell><text:p>{a.b.2}</text:p></table:table-cell>\
+</table:table-row>\
+</table:table>\
+</table:table-cell>\
+</table:table-row>\
+</table:table></xml>'''
+    parameters = {
+                u'a' :
+                (
+                    {'1' : 'aaa',
+                     'b' :
+                      (
+                       {'2' : 'bbb'},
+                       {'2' : 'ccc'},
+                      )
+                    },
+                    {'1' : 'AAA',
+                     'b' :
+                      (
+                       {'2' : 'BBB'},
+                       {'2' : 'CCC'},
+                       {'2' : 'DDD'},
+                      )
+                    },
+                ),
+            }
+    t = Template(source, parameters)
+    rendered_content_xml = t.render()
+    print rendered_content_xml
+
+
 def main():
     #return testTable_in_frame()
-    return testImage_in_table()
-    return testImage_and_table()
-    return testImage()
-    return testTable()
+    #return testImage_in_table()
+    #return testImage_and_table()
+    #return testImage()
+    #return testTable()
+    return testNested_table()
 
 if __name__ == '__main__':
     main()
