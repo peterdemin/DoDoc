@@ -358,7 +358,9 @@ class Parameters_finder(object):
 
 class Replacer(object):
     re_param = re.compile(ur'(?iu)\{([a-z0-9\._]+)\}')
+    re_hyphen = re.compile(ur'(?iu)\b-\b')
     BREAK_LINE = u'##LINE-BREAK-IN-REPLACEMENT##'
+    nobr_hyphen = '\xe2\x80\x91'.decode('utf-8')
 
     def __init__(self, rdict = None, adict = None):
         self.doc = xml.dom.minidom.Document()
@@ -388,7 +390,9 @@ class Replacer(object):
     def replacement(self, matched):
         key = matched.group(1)
         if self.rdict.has_key(key):
-            lines = [a.strip() for a in self.rdict[key].split('#BR#')]
+            value = self.rdict[key]
+            value = self.re_hyphen.sub(self.nobr_hyphen, value)
+            lines = [a.strip() for a in value.split('#BR#')]
             content = self.BREAK_LINE.join(lines)
             return unicode(content)
         else:
