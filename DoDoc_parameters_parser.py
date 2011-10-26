@@ -15,8 +15,9 @@ class Parser(xml.sax.handler.ContentHandler):
     def __init__(self):
         self.tree = {}
         self.cur_name = None
-        self.in_row = None
-        self.cur_row = None
+        self.table_names = []   # nested tables names
+        self.tables = []        # nested tables
+        self.cur_row = {}       # current row elements
         self.in_image = None
         self.cur_images = []
         self.image_pathes = set()
@@ -27,17 +28,13 @@ class Parser(xml.sax.handler.ContentHandler):
     def startElement(self, name, attrs):
         self.level+= 1
         if name == self.tag_row:
-            if self.in_row:
-                print u'ERROR: Nested %ss are not allowed!' % (self.tag_row)
-                return
+            if self.cur_name:
+                self.in_row.append(self.cur_name)
+                self.cur_row.append({})
+            #    if not self.tree.has_key(self.in_row):
+            #        self.tree[self.in_row] = []
             else:
-                if self.cur_name:
-                    self.in_row = self.cur_name
-                    self.cur_row = {}
-                    if not self.tree.has_key(self.in_row):
-                        self.tree[self.in_row] = []
-                else:
-                    print u'ERROR: "%s" tag name is reserved!' % (self.tag_row)
+                raise ValueError(u'ERROR: "%s" tag name is reserved!' % (self.tag_row))
         elif name == self.tag_csv:
             if self.in_row:
                 print u'ERROR: Nested %ss are not allowed!' % (self.tag_row)
@@ -72,8 +69,8 @@ class Parser(xml.sax.handler.ContentHandler):
             else:
                 print u'ERROR: "%s" tag name is reserved!' % (self.tag_image)
         else:
-            if self.in_row:
-                if self.cur_row.has_key(name):
+            if len(self.in_row):
+                if self.cur_row[-1].has_key(name):
                     raise ValueError(u'Key "%s" allready exists in %s "%s"' % (name, self.tag_row, self.in_row))
             elif self.tree.has_key(name):
                 raise ValueError(u'Key "%s" allready exists' % (name))
@@ -88,9 +85,12 @@ class Parser(xml.sax.handler.ContentHandler):
             if type(old_content) == unicode:
                 d[elem] = old_content + content
         if name == self.tag_row:
-            self.tree[self.in_row].append(self.cur_row)
-            self.cur_name = self.in_row
-            self.in_row = None
+            if len(self.in_row) > 1:
+                self.in_row[-1].append(self.cur_row[-1])
+            else:
+                self.tree[self.in_row[0]].append(self.cur_row[0])
+                self.cur_name = self.in_row
+                self.in_row = None
         elif name == self.tag_csv:
             self.cur_name = self.in_row
             self.in_row = None
@@ -111,7 +111,7 @@ class Parser(xml.sax.handler.ContentHandler):
             assert(self.in_row == None)
             self.cur_name = None
         elif self.in_row:
-            safe_update(self.cur_row, self.cur_name, self.content)
+            safe_update(self.cur_row[-1], self.cur_name, self.content)
         else:
             if self.cur_name == name:
                 safe_update(self.tree, self.cur_name, self.content)
@@ -234,14 +234,6 @@ def parseParameters_XML(xml_content):
     xml.sax.parseString(xml_content, p)
     return expandImages_in_tables(p.tree)
 
-def testImage_in_table():
-    params = { u'table' : [ { u'fc1' : [u'1.png', u'2.png'],            u'fc2' : [u'3.png', u'4.png', u'5.png'] },
-                            { u'fc1' : [u'6.png', u'7.png', u'8.png'],  u'fc2' : [u'9.png'] },
-                            { u'a' : u'aa', u'b' : u'bb' },
-                          ],
-             }
-    pprint(expandImages_in_tables(params))
-
 def is_table(value):
     if type(value) == list:
         if len(value):
@@ -302,6 +294,14 @@ def expandImages_in_tables(params):
             result[k] = v
     return result
 
+def testImage_in_table():
+    params = { u'table' : [ { u'fc1' : [u'1.png', u'2.png'],            u'fc2' : [u'3.png', u'4.png', u'5.png'] },
+                            { u'fc1' : [u'6.png', u'7.png', u'8.png'],  u'fc2' : [u'9.png'] },
+                            { u'a' : u'aa', u'b' : u'bb' },
+                          ],
+             }
+    pprint(expandImages_in_tables(params))
+
 def main():
     #return testImage_in_table()
     xml_content = '''
@@ -314,6 +314,16 @@ def main():
             <name>Demin
             Peter
             Evgenievich</name>
+            <arguments type="table">
+                <ROW>
+                    <name>a</name>
+                    <value>1</value>
+                </ROW>
+                <ROW>
+                    <name>b</name>
+                    <value>2</value>
+                </ROW>
+            </arguments>
         </ROW>
         <ROW>
             <position>2</position>
