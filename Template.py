@@ -206,22 +206,25 @@ class Row_handler(Tag_handler):
             if len(data) == 2:
                 tables_used.add(data[0])
         self.render_root = self.doc.createElement('root')
-        #print 'tables_used', tables_used
+        print 'tables_used', tables_used
         if len(tables_used):
             for t in tables_used:
                 if self.params.has_key(t):
-                    for lines in self.params[t]:
-                        row_dict = {}
+                    for row in self.params[t]:
+                        row_dict = dict(self.params)
+                        #row_dict.pop(t)
                         #print 'lines', lines
-                        for k, v in lines.iteritems():
+                        for k, v in row.iteritems():
                             row_dict['%s.%s' % (t, k)] = v
                         self.renderRow(row_dict)
         else:
-            self.renderRow({})
+            print 'no tables used'
+            self.renderRow(self.params)
+        print '!!!'
         return self.render_root
 
     def renderRow(self, params):
-        #print 'renderRow with', params
+        print 'renderRow with', params
         t = Template_handler(params)
         t.do_not_handle_once.add(self.handled_tag)
         iterNode(self.doc, self.doc.firstChild, t)
@@ -503,29 +506,43 @@ def testImage_in_table():
     print rendered_content_xml
 
 def testNested_table():
-    source = u'<xml><table:table>\
-<table:table-row>\
-<table:table-cell><text:p>{a.1}</text:p></table:table-cell>\
-<table:table-cell>\
-<table:table>\
-<table:table-row>\
-<table:table-cell><text:p>{a.b.2}</text:p></table:table-cell>\
-</table:table-row>\
-</table:table>\
-</table:table-cell>\
-</table:table-row>\
-</table:table></xml>'''
+    source = u'''
+<xml>
+ <table:table>
+  <table:table-row>
+   <table:table-cell>
+    <text:p>
+     {a.1}
+     <table:table>
+      <table:table-row>
+       <table:table-cell><text:p>{a.3}</text:p></table:table-cell>
+      </table:table-row>
+      <table:table-row>
+       <table:table-cell><text:p>{a.b.2} {o}</text:p></table:table-cell>
+      </table:table-row>
+     </table:table>
+    </text:p>
+   </table:table-cell>
+  </table:table-row>
+ </table:table>
+</xml>'''
+    source = ''.join(filter(len, [a.strip() for a in source.splitlines()]))
     parameters = {
+                u'o' : 'ooo',
                 u'a' :
                 (
-                    {'1' : 'aaa',
+                    {
+                     '1' : 'aaa',
+                     '3' : 'aaaaaa',
                      'b' :
                       (
                        {'2' : 'bbb'},
                        {'2' : 'ccc'},
                       )
                     },
-                    {'1' : 'AAA',
+                    {
+                     '1' : 'AAA',
+                     '3' : 'AAAAAA',
                      'b' :
                       (
                        {'2' : 'BBB'},
