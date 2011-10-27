@@ -2,6 +2,8 @@
 # -*- coding: utf8 -*-
 encoding='utf8'
 
+VERSION = '2.1'
+
 import os
 import sys
 import codecs
@@ -106,7 +108,11 @@ def main():
     opts.add_option("-t", "--template", dest="template_path",   help="input ODT template file path")
     opts.add_option("-x", "--xml",      dest="xml_path",        help="input XML parameters file path")
     opts.add_option("-o", "--output",   dest="result_path",     help="output ODT result file path")
+    opts.add_option("-v", "--version",  action="store_true", dest="version", default=False, help="print current version")
     (options, args) = opts.parse_args()
+    if options.version:
+        print VERSION
+        return
     if options.template_path:
         template_path = options.template_path
     else:
