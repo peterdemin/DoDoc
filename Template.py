@@ -199,28 +199,36 @@ class Row_handler(Tag_handler):
     def render(self):
         pf = Parameters_finder()
         iterNode(self.doc, self.doc.firstChild, pf)
-        tables_used = set()
-        #print 'pf.parameters', pf.parameters
+        table_name = None
+        passed_params = {}
         for param in pf.parameters:
             data = param.rsplit('.', 1)
             if len(data) == 2:
-                tables_used.add(data[0])
+                if self.params.has_key(data[0]):
+                    table_name = data[0]
+                    break
         self.render_root = self.doc.createElement('root')
-        print 'tables_used', tables_used
-        if len(tables_used):
-            for t in tables_used:
-                if self.params.has_key(t):
-                    for row in self.params[t]:
-                        row_dict = dict(self.params)
-                        #row_dict.pop(t)
-                        #print 'lines', lines
-                        for k, v in row.iteritems():
-                            row_dict['%s.%s' % (t, k)] = v
-                        self.renderRow(row_dict)
+        print 'table_name', table_name
+        if table_name:
+            if self.params.has_key(table_name):
+                for row in self.params[table_name]:
+                    row_dict = {}
+                    for param in pf.parameters:
+                        if self.params.has_key(param):
+                            row_dict[param] = self.params[param]
+                        else:
+                            data = param.rsplit('.', 1)
+                            if len(data) == 2:
+                                if table_name == data[0]:
+                                    row_dict['%s.%s' % (table_name, data[1])] = row[data[1]]
+                                else:
+                                    data = param.split('.')
+                                    if table_name == data[0]:
+                                        row_dict['%s.%s' % (table_name, data[1])] = row[data[1]]
+                    self.renderRow(row_dict)
         else:
-            print 'no tables used'
+            #print 'no tables used'
             self.renderRow(self.params)
-        print '!!!'
         return self.render_root
 
     def renderRow(self, params):
