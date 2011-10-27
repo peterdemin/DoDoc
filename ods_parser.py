@@ -42,6 +42,14 @@ class CalcHandler(xml.sax.handler.ContentHandler):
         elif name == self.tag_table:
             self.tables[self.table_name] = self.rows
 
+def parseODS(filename):
+    fd = zipfile.ZipFile(filename, 'r')
+    content = fd.read("content.xml")
+    fd.close()
+    calcHandler=CalcHandler()
+    xml.sax.parseString(content, calcHandler)
+    return calcHandler.tables
+
 def filterBlank_rows(table):
     return filter(len, [filter(len, [cell.strip() for cell in row]) for row in table])
 
@@ -64,23 +72,33 @@ def table2dom(table, table_name):
             node.appendChild(doc.createTextNode(cell))
     return root
 
-fd = zipfile.ZipFile("CARD_all.ods", 'r')
-content = fd.read("content.xml")
-fd.close()
-calcHandler=CalcHandler()
-xml.sax.parseString(content, calcHandler)
-table_name = u'bocp'
-filtered = filterBlank_rows(calcHandler.tables[table_name])
-rows = filtered # cropColumns(filtered, 2, 4)
-filename = table_name + '.txt'
+def table2csv(table):
+    return u'\n'.join([u'\t'.join([u'"%s"' % (cell) for cell in row]) for row in table])
 
-fp = codecs.open(filename, "w", "utf8")
-doc = xml.dom.minidom.Document()
-doc.encoding = "UTF-8"
-root = doc.createElement('DoDoc')
-doc.appendChild(root)
-root.appendChild(table2dom(rows, table_name))
-fp.write(doc.toprettyxml())
-#for cells in rows:
-#    fp.write(u';'.join(cells) + u'\n')
-fp.close()
+if __name__ == '__main__':
+    tables = parseODS("CARD_all.ods")
+    translations = {
+                    u'Карточка Cпец.раздела' : u'special',
+                    u'Карточка БОЦП' : u'bocp',
+                    u'Карточка ПАУД' : u'paud',
+                    u'Карточка ПЦБИК' : u'pcbik',
+                    u'Карточка ФДККП' : u'fdkkp',
+                   }
+
+    for table_name in tables.iterkeys():
+        #table_name = u'bocp'
+        filtered = filterBlank_rows(tables[table_name])
+        rows = filtered # cropColumns(filtered, 2, 4)
+        table_name = translations[table_name] or table_name
+        filename = table_name + '.csv'
+        codecs.open(filename, "w", "utf8").write(table2csv(rows))
+        #fp = codecs.open(filename, "w", "utf8")
+        #doc = xml.dom.minidom.Document()
+        #doc.encoding = "UTF-8"
+        #root = doc.createElement('DoDoc')
+        #doc.appendChild(root)
+        #root.appendChild(table2dom(rows, table_name))
+        #fp.write(doc.toprettyxml())
+        ##for cells in rows:
+        ##    fp.write(u';'.join(cells) + u'\n')
+        #fp.close()
