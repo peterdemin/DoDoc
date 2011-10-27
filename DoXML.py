@@ -11,34 +11,42 @@ class DoXML(object):
         self.doc.encoding = "UTF-8"
         self.root = self.doc.createElement(u'DoDoc')
         self.doc.appendChild(self.root)
+        self.last = self.root
+        self.last_table = None
 
-    def text(self, node, name, content):
+    def text(self, name, content, node = None):
+        node_ = node or self.last or self.root
         if type(content) != unicode:
             content = unicode(content)
         if len(content):
-            node.appendChild(self.doc.createElement(name)).appendChild(self.doc.createTextNode(content))
+            node_.appendChild(self.doc.createElement(name)).appendChild(self.doc.createTextNode(content))
         else:
-            node.appendChild(self.doc.createElement(name))
+            node_.appendChild(self.doc.createElement(name))
 
-    def table(self, node, name):
-        return node.appendChild(self.doc.createElement(name))
+    def table(self, name, node = None):
+        node_ = node or self.last or self.root
+        self.last_table = node_.appendChild(self.doc.createElement(name))
+        return self.last_table
 
-    def row(self, node):
-        return node.appendChild(self.doc.createElement('ROW'))
+    def row(self, node = None):
+        node_ = node or self.last_table
+        self.last = node_.appendChild(self.doc.createElement('ROW'))
+        return self.last
 
-    def image(self, node, name, image_path):
+    def image(self, name, image_path, node = None):
+        node_ = node or self.last or self.root
         if type(image_path) != unicode:
             image_path = unicode(image_path)
-        node.appendChild(self.doc.createElement(name)).appendChild(self.doc.createElement(u'IMAGE')).appendChild(self.doc.createTextNode(image_path))
+        node_.appendChild(self.doc.createElement(name)).appendChild(self.doc.createElement(u'IMAGE')).appendChild(self.doc.createTextNode(image_path))
 
-    def text_root(self, name, content):
-        text(self.root, name, content)
+    def textRoot(self, name, content):
+        self.text(name, content, self.root)
 
-    def table_root(self, name):
-        return table(self.root, name)
+    def tableRoot(self, name):
+        return self.table(name, self.root)
 
-    def image_root(self, name, image_path):
-        image(self.root, name, image_path)
+    def imageRoot(self, name, image_path):
+        self.image(self.root, name, image_path)
 
     def save(self, filename):
         import codecs
@@ -46,22 +54,22 @@ class DoXML(object):
 
 def main():
     doc = DoXML()
-    funcs = doc.table_root(u'doc')
-    row = doc.row(funcs)
-    doc.text(row, 'section', u'Алгебраические операции')
-    doc.text(row, 'short', u'Умножение')
-    doc.text(row, 'prototype', u'mult(a, b, c)')
-    args = doc.table(row, 'args')
-    arg_row = doc.row(args)
-    doc.text(arg_row, 'name', u'a')
-    doc.text(arg_row, 'meaning', u'множитель')
-    arg_row = doc.row(args)
-    doc.text(arg_row, 'name', u'b')
-    doc.text(arg_row, 'meaning', u'множитель')
-    arg_row = doc.row(args)
-    doc.text(arg_row, 'name', u'c')
-    doc.text(arg_row, 'meaning', u'произведение')
-    doc.text(row, 'comment', u'')
+    funcs = doc.table(u'doc')
+    row = doc.row()
+    doc.text('section', u'Алгебраические операции')
+    doc.text('short', u'Умножение')
+    doc.text('prototype', u'mult(a, b, c)')
+    doc.table('args')
+    doc.row()
+    doc.text('name', u'a')
+    doc.text('meaning', u'множитель')
+    doc.row()
+    doc.text('name', u'b')
+    doc.text('meaning', u'множитель')
+    doc.row()
+    doc.text('name', u'c')
+    doc.text('meaning', u'произведение')
+    doc.text('comment', u'', row)
     doc.save('test.xml')
     return
 
