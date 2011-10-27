@@ -86,7 +86,7 @@ class Parser(xml.sax.handler.ContentHandler):
         else:
             if len(self.table_names):
                 if self.cur_row.has_key(name):
-                    raise ValueError(u'Key "%s" allready exists in %s "%s"' % (name, self.tag_row, self.in_row))
+                    raise ValueError(u'Key "%s" allready exists in %s "%s"' % (name, self.tag_row, self.table_names[-1]))
             elif self.tree.has_key(name):
                 raise ValueError(u'Key "%s" allready exists' % (name))
             self.cur_name = name
