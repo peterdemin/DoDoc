@@ -208,7 +208,7 @@ class Row_handler(Tag_handler):
                     table_name = data[0]
                     break
         self.render_root = self.doc.createElement('root')
-        print 'table_name', table_name
+        #print 'table_name', table_name
         if table_name:
             if self.params.has_key(table_name):
                 for row in self.params[table_name]:
@@ -218,13 +218,12 @@ class Row_handler(Tag_handler):
                             row_dict[param] = self.params[param]
                         else:
                             data = param.rsplit('.', 1)
-                            if len(data) == 2:
-                                if table_name == data[0]:
+                            if len(data) == 2 and table_name == data[0] and row.has_key(data[1]):
+                                row_dict['%s.%s' % (table_name, data[1])] = row[data[1]]
+                            else:
+                                data = param.split('.')
+                                if table_name == data[0] and row.has_key(data[1]):
                                     row_dict['%s.%s' % (table_name, data[1])] = row[data[1]]
-                                else:
-                                    data = param.split('.')
-                                    if table_name == data[0]:
-                                        row_dict['%s.%s' % (table_name, data[1])] = row[data[1]]
                     self.renderRow(row_dict)
         else:
             #print 'no tables used'
@@ -232,7 +231,7 @@ class Row_handler(Tag_handler):
         return self.render_root
 
     def renderRow(self, params):
-        print 'renderRow with', params
+        #print 'renderRow with', params
         t = Template_handler(params)
         t.do_not_handle_once.add(self.handled_tag)
         iterNode(self.doc, self.doc.firstChild, t)
