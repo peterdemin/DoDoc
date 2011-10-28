@@ -9,6 +9,7 @@ TAG_ROW   = u'table:table-row'
 TAG_FRAME = u'draw:frame'
 TAG_IMAGE = u'draw:image'
 TAG_BREAK = u'text:line-break'
+TAG_TAB = u'text:tab'
 TAG_SECTION = u'text:section'
 SECTION_NAME = u'text:name'
 TAG_PARAGRAPH = u'text:p'
@@ -379,6 +380,7 @@ class Replacer(object):
     re_param = re.compile(ur'(?iu)\{([a-z0-9\._]+)\}')
     re_hyphen = re.compile(ur'(?iu)\b-\b')
     BREAK_LINE = u'##LINE-BREAK-IN-REPLACEMENT##'
+    TAB = '\t'
     nobr_hyphen = '\xe2\x80\x91'.decode('utf-8')
 
     def __init__(self, rdict = None, adict = None):
@@ -421,11 +423,17 @@ class Replacer(object):
         rcontent = self.re_param.sub(self.replacement, content)
         lines = rcontent.split(self.BREAK_LINE)
         for i, line in enumerate(lines):
-            text_node = self.doc.createTextNode(line)
             if i != 0:
                 break_node = self.doc.createElement(TAG_BREAK)
                 self.node.appendChild(break_node)
-            self.node.appendChild(text_node)
+            tab_parts = line.split(self.TAB)
+            for ti, part in enumerate(tab_parts):
+                if i != 0:
+                    tab_node = self.doc.createElement(TAG_TAB)
+                    self.node.appendChild(tab_node)
+                    tab_parts
+                text_node = self.doc.createTextNode(part)
+                self.node.appendChild(text_node)
 
 def testTable():
     source = u'<xml><table:table><table:table-row>\
