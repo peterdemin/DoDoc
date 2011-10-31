@@ -365,7 +365,11 @@ class Parameters_finder(object):
         self.parameters = set()
 
     def startElement(self, name, attrs):
-        pass
+        if name == TAG_FRAME:
+            if type(attrs['draw:name']) == unicode:
+                self.parameters.add(attrs['draw:name'])
+            else:
+                self.parameters.add(attrs['draw:name'].nodeValue)
 
     def endElement(self, name):
         pass
@@ -574,11 +578,11 @@ def testNested_table():
 
 def main():
     #return testTable_in_frame()
-    #return testImage_in_table()
+    return testImage_in_table()
     #return testImage_and_table()
     #return testImage()
     #return testTable()
-    return testNested_table()
+    #return testNested_table()
 
 if __name__ == '__main__':
     main()
