@@ -74,6 +74,9 @@ class OpenOffice(object):
             return False
 
     def close(self):
+        #progress('Attempting to close...')
+        #self.doc.close(True) # what means True?
+        progress('Attempting to dispose...')
         self.doc.dispose()
         progress('Disposed document.')
         pass
