@@ -432,10 +432,9 @@ class Replacer(object):
                 self.node.appendChild(break_node)
             tab_parts = line.split(self.TAB)
             for ti, part in enumerate(tab_parts):
-                if i != 0:
+                if ti != 0:
                     tab_node = self.doc.createElement(TAG_TAB)
                     self.node.appendChild(tab_node)
-                    tab_parts
                 text_node = self.doc.createTextNode(part)
                 self.node.appendChild(text_node)
 
