@@ -22,8 +22,8 @@ def setAttributes(doc, node, attributes):
 
 def iterNode(doc, node, callback):
     if node.nodeType == node.TEXT_NODE:
-        print '=-=-=-=-=-=-', node.wholeText
-        callback.characters(node.wholeText)
+        #print '=-=-=-=-=-=-', node.data
+        callback.characters(node.data)
     else:
         #print 'iterNode', node.tagName
         callback.startElement(node.tagName, node.attributes)
@@ -39,11 +39,6 @@ class Template(object):
         self.params = params or {}
 
     def render(self):
-        h = Template_handler(self.params)
-        xml.sax.parseString(self.xml_content, h)
-        result = h.resultXML()
-        return result
-
         h = Template_handler(self.params)
         xml.sax.parseString(self.xml_content, h)
         r = h.render()
@@ -124,7 +119,6 @@ class Template_handler(xml.sax.handler.ContentHandler):
             self.handler = None
 
     def render(self):
-        print 'RrRrRr', self.doc.toxml()
         r = Replacer(self.params)
         iterNode(self.doc, self.doc.firstChild, r)
         return r.doc
@@ -591,9 +585,9 @@ def testNested_table():
 def testStyles():
     source = ur'''
 <tagadam>
-    <text:p>
+    <text:text>
         See t&lt;super&gt;e&lt;/super&gt;&lt;sub&gt;x&lt;/sub&gt;t in &lt;red&gt;RED&lt;/red&gt; color.
-    </text:p>
+    </text:text>
 </tagadam>'''
     source = ''.join(filter(len, [a.strip() for a in source.splitlines()]))
     parameters = { }

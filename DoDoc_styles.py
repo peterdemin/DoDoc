@@ -46,10 +46,12 @@ class Stylesheet(object):
         self.cur_text = []
 
     def endElement(self, name):
-        content = u''.join(self.cur_text)
-        content = self.replaceRAW(content)
-        for a in self.expand(content):
-            self.node.appendChild(a)
+        if len(self.cur_text):
+            content = u''.join(self.cur_text)
+            content = self.replaceRAW(content)
+            for a in self.expand(content):
+                self.node.appendChild(a)
+            self.cur_text = []
         self.node = self.node.parentNode
 
     def characters(self, content):
@@ -64,7 +66,8 @@ class Stylesheet(object):
 
     def expand(self, text):
         e = Expander(self)
-        content_dom = xml.dom.minidom.parseString('<xml>%s</xml>' % (text))
+        raw_xml = '<tttt xmlns:style="a" xmlns:fo="b" xmlns:text="b">%s</tttt>' % (text)
+        content_dom = xml.dom.minidom.parseString(raw_xml)
         iterNode(content_dom, content_dom.firstChild, e)
         return e.doc.firstChild.childNodes
 
