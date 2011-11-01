@@ -2,7 +2,7 @@ import re
 import xml.sax
 import xml.dom.minidom
 from pprint import pprint
-
+import DoDoc_styles
 
 TAG_TABLE = u'table:table'
 TAG_ROW   = u'table:table-row'
@@ -22,6 +22,7 @@ def setAttributes(doc, node, attributes):
 
 def iterNode(doc, node, callback):
     if node.nodeType == node.TEXT_NODE:
+        print '=-=-=-=-=-=-', node.wholeText
         callback.characters(node.wholeText)
     else:
         #print 'iterNode', node.tagName
@@ -41,12 +42,20 @@ class Template(object):
         h = Template_handler(self.params)
         xml.sax.parseString(self.xml_content, h)
         result = h.resultXML()
+        return result
+
+        h = Template_handler(self.params)
+        xml.sax.parseString(self.xml_content, h)
+        r = h.render()
+        #print '###', r.toprettyxml()
+        s = DoDoc_styles.Stylesheet_default()
+        iterNode(r, r.firstChild, s)
+        result = s.doc.toprettyxml()
         self.image_urls = h.imageUrls()
         return result
 
     def imageUrls(self):
         return self.image_urls
-
 
 class Template_handler(xml.sax.handler.ContentHandler):
     def __init__(self, params = None):
@@ -115,6 +124,7 @@ class Template_handler(xml.sax.handler.ContentHandler):
             self.handler = None
 
     def render(self):
+        print 'RrRrRr', self.doc.toxml()
         r = Replacer(self.params)
         iterNode(self.doc, self.doc.firstChild, r)
         return r.doc
@@ -386,6 +396,7 @@ class Replacer(object):
     BREAK_LINE = u'##LINE-BREAK-IN-REPLACEMENT##'
     TAB = '\t'
     nobr_hyphen = '\xe2\x80\x91'.decode('utf-8')
+    nobr = '\xe2\x81\xa0'.decode('utf-8')
 
     def __init__(self, rdict = None, adict = None):
         self.doc = xml.dom.minidom.Document()
@@ -424,6 +435,8 @@ class Replacer(object):
             return matched.group(0)
 
     def characters(self, content):
+        #print '>>>', content
+        #raise ValueError(content)
         rcontent = self.re_param.sub(self.replacement, content)
         lines = rcontent.split(self.BREAK_LINE)
         for i, line in enumerate(lines):
@@ -575,14 +588,27 @@ def testNested_table():
     rendered_content_xml = t.render()
     print rendered_content_xml
 
+def testStyles():
+    source = ur'''
+<tagadam>
+    <text:p>
+        See t&lt;super&gt;e&lt;/super&gt;&lt;sub&gt;x&lt;/sub&gt;t in &lt;red&gt;RED&lt;/red&gt; color.
+    </text:p>
+</tagadam>'''
+    source = ''.join(filter(len, [a.strip() for a in source.splitlines()]))
+    parameters = { }
+    t = Template(source, parameters)
+    rendered_content_xml = t.render()
+    print rendered_content_xml
 
 def main():
     #return testTable_in_frame()
-    return testImage_in_table()
+    #return testImage_in_table()
     #return testImage_and_table()
     #return testImage()
     #return testTable()
     #return testNested_table()
+    return testStyles()
 
 if __name__ == '__main__':
     main()

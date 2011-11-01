@@ -1,3 +1,5 @@
+from DoXML import DoXML
+from Template import * #iterNode, setAttributes
 import xml.dom.minidom
 import re
 
@@ -7,11 +9,13 @@ class Stylesheet(object):
         self.style_root = self.style_def.createElement('styles')
         self.style_def.appendChild(self.style_root)
         self.regulars = []
+        self.doc = xml.dom.minidom.Document()
+        self.node = None
 
     def inject(self, document):
         root = document.firstChild() # office:document-content
         doc_styles = root.getElementsByTagName('office:automatic-styles')[0]
-        for node in self.style_def.childNodes:
+        for node in self.style_root.childNodes:
             doc_styles.appendChild(node)
 
     def addStyle(self, name, attributes):
@@ -19,8 +23,10 @@ class Stylesheet(object):
         style_node = self.style_def.createElement('style:style')
         #print dir(style_node)
         style_name = 'DoDoc_%s' % (name)
-        reg_exp = re.compile(ur'(?imu)\<%(name)s\>(.+?)\</%(name)s\>' % {'name' : name})
-        self.regulars.append((reg_exp, style_name))
+        expr = ur'(?imu)\<%(name)s\>(.+?)\</%(name)s\>' % {'name' : name}
+        repl = ur'<text:span text:style-name="%(name)s">\1</text:span>' % {'name' : style_name}
+        reg_exp = re.compile(expr)
+        self.regulars.append((re.compile(expr), repl))
         style_node.setAttribute('style:name', style_name)
         style_node.setAttribute('style:family', 'text')
         descr_node = self.style_def.createElement('style:text-properties')
@@ -29,11 +35,60 @@ class Stylesheet(object):
         style_node.appendChild(descr_node)
         self.style_root.appendChild(style_node)
 
-    def apply(self, source):
-        result = source
-        for repl in self.regulars:
-            result = repl[0].sub(repl[1], result)
-        return result
+    def startElement(self, name, attrs):
+        if not self.node:
+            self.node = self.doc.createElement(name)
+            self.doc.appendChild(self.node)
+        else:
+            elem = self.doc.createElement(name)
+            self.node = self.node.appendChild(elem)
+        setAttributes(self.doc, self.node, attrs)
+        self.cur_text = []
+
+    def endElement(self, name):
+        content = u''.join(self.cur_text)
+        content = self.replaceRAW(content)
+        for a in self.expand(content):
+            self.node.appendChild(a)
+        self.node = self.node.parentNode
+
+    def characters(self, content):
+        self.cur_text.append(content)
+        #text_node = self.doc.createTextNode(content)
+        #self.node.appendChild(text_node)
+
+    def replaceRAW(self, text):
+        for r in self.regulars:
+            text = r[0].sub(r[1], text)
+        return text
+
+    def expand(self, text):
+        e = Expander(self)
+        content_dom = xml.dom.minidom.parseString('<xml>%s</xml>' % (text))
+        iterNode(content_dom, content_dom.firstChild, e)
+        return e.doc.firstChild.childNodes
+
+class Expander(object):
+    def __init__(self, stylesheet):
+        self.stylesheet = stylesheet
+        self.doc = xml.dom.minidom.Document()
+        self.node = None
+
+    def startElement(self, name, attrs):
+        if not self.node:
+            self.node = self.doc.createElement(name)
+            self.doc.appendChild(self.node)
+        else:
+            elem = self.doc.createElement(name)
+            self.node = self.node.appendChild(elem)
+        setAttributes(self.doc, self.node, attrs)
+
+    def endElement(self, name):
+        self.node = self.node.parentNode
+
+    def characters(self, content):
+        text_node = self.doc.createTextNode(content)
+        self.node.appendChild(text_node)
 
 class Stylesheet_default(Stylesheet):
     def __init__(self):
@@ -43,13 +98,17 @@ class Stylesheet_default(Stylesheet):
         self.addStyle('blue',  {'fo:color' : "#4747b8"})
         self.addStyle('red',   {'fo:color' : "#b84747"})
         self.addStyle('green', {'fo:color' : "#47b847"})
-
-    def unpretty(self, xml):
-        return u''.join(filter(len, [a.strip() for a in xml.splitlines()]))
-
+        self.addStyle('b', {'fo:font-weight' : "bold", 'style:font-weight-complex' : 'bold'})
+        self.addStyle('i', {'fo:font-style' : "italic", 'style:font-style-complex' : 'italic'})
+        self.addStyle('u', {'fo:text-underline-width' : "auto", 'style:text-underline-style' : 'solid', 'style:text-underline-color' : 'font-color'})
+        
 def test():
+    doc = DoXML()
     s = Stylesheet_default()
-    print s.style_def.toprettyxml()
+    raw_xml = '<test>Text of <red>Red color</red></test>'
+    source = xml.dom.minidom.parseString(raw_xml)
+    iterNode(source, source.firstChild, s)
+    print s.doc.toprettyxml()
 
 if __name__ == '__main__':
     test()
