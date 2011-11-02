@@ -1,5 +1,5 @@
 from DoXML import DoXML
-from Template import * #iterNode, setAttributes
+import Template
 import xml.dom.minidom
 import re
 
@@ -13,10 +13,10 @@ class Stylesheet(object):
         self.node = None
 
     def inject(self, document):
-        root = document.firstChild() # office:document-content
+        root = document.firstChild # office:document-content
         doc_styles = root.getElementsByTagName('office:automatic-styles')[0]
         for node in self.style_root.childNodes:
-            doc_styles.appendChild(node)
+            doc_styles.appendChild(node.cloneNode(True))
 
     def addStyle(self, name, attributes):
         #self.styles[name] = replacement
@@ -42,15 +42,23 @@ class Stylesheet(object):
         else:
             elem = self.doc.createElement(name)
             self.node = self.node.appendChild(elem)
-        setAttributes(self.doc, self.node, attrs)
+        Template.setAttributes(self.doc, self.node, attrs)
         self.cur_text = []
 
     def endElement(self, name):
         if len(self.cur_text):
             content = u''.join(self.cur_text)
             content = self.replaceRAW(content)
-            for a in self.expand(content):
-                self.node.appendChild(a)
+            expanded = self.expand(content)
+            asd = False
+            if len(expanded) > 1:
+                asd = True
+                print '!', expanded
+            for a in expanded:
+                self.node.appendChild(a.cloneNode(True))
+            if asd:
+                print '!!', self.node.toxml()
+                print '#', len(expanded), expanded
             self.cur_text = []
         self.node = self.node.parentNode
 
@@ -66,10 +74,14 @@ class Stylesheet(object):
 
     def expand(self, text):
         e = Expander(self)
-        raw_xml = '<tttt xmlns:style="a" xmlns:fo="b" xmlns:text="b">%s</tttt>' % (text)
-        content_dom = xml.dom.minidom.parseString(raw_xml)
-        iterNode(content_dom, content_dom.firstChild, e)
-        return e.doc.firstChild.childNodes
+        raw_xml = u'<tttt xmlns:style="a" xmlns:fo="b" xmlns:text="c">%s</tttt>' % (text)
+        content_dom = xml.dom.minidom.parseString(raw_xml.encode('utf8'))
+        Template.iterNode(content_dom, content_dom.firstChild, e)
+        children = e.doc.firstChild.childNodes
+        if len(children) > 1:
+            for c in children:
+                print 'RAC', c.nodeType, c.toxml()
+        return children
 
 class Expander(object):
     def __init__(self, stylesheet):
@@ -84,7 +96,7 @@ class Expander(object):
         else:
             elem = self.doc.createElement(name)
             self.node = self.node.appendChild(elem)
-        setAttributes(self.doc, self.node, attrs)
+        Template.setAttributes(self.doc, self.node, attrs)
 
     def endElement(self, name):
         self.node = self.node.parentNode
@@ -110,7 +122,7 @@ def test():
     s = Stylesheet_default()
     raw_xml = '<test>Text of <red>Red color</red></test>'
     source = xml.dom.minidom.parseString(raw_xml)
-    iterNode(source, source.firstChild, s)
+    Template.iterNode(source, source.firstChild, s)
     print s.doc.toprettyxml()
 
 if __name__ == '__main__':

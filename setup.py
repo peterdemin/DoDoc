@@ -33,5 +33,5 @@ setup( name = 'DoDoc',
        description = 'Template-based documentation generation tool',
        author = 'P. E. Demin',
        author_email = 'deminpe@otd263',
-       py_modules = (r'DoDoc/__init__', 'DoDoc/DoDoc', 'DoDoc/DoDoc_parameters_parser', 'DoDoc/import_uno', 'DoDoc/odg2png', 'DoDoc/odt2pdf', 'DoDoc/OpenOffice_document', 'DoDoc/Template', 'DoDoc/DoXML'),
+       py_modules = (r'DoDoc/__init__', 'DoDoc/DoDoc', 'DoDoc/DoDoc_parameters_parser', 'DoDoc/import_uno', 'DoDoc/odg2png', 'DoDoc/odt2pdf', 'DoDoc/OpenOffice_document', 'DoDoc/Template', 'DoDoc/DoXML', 'DoDoc/DoDoc_styles'),
      )
