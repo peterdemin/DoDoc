@@ -11,6 +11,7 @@ class Stylesheet(object):
         self.regulars = []
         self.doc = xml.dom.minidom.Document()
         self.node = None
+        self.cur_text = []
 
     def inject(self, document):
         root = document.firstChild # office:document-content
@@ -36,6 +37,7 @@ class Stylesheet(object):
         self.style_root.appendChild(style_node)
 
     def startElement(self, name, attrs):
+        self.putCurrent_text()
         if not self.node:
             self.node = self.doc.createElement(name)
             self.doc.appendChild(self.node)
@@ -46,6 +48,15 @@ class Stylesheet(object):
         self.cur_text = []
 
     def endElement(self, name):
+        self.putCurrent_text()
+        self.node = self.node.parentNode
+
+    def characters(self, content):
+        self.cur_text.append(content)
+        #text_node = self.doc.createTextNode(content)
+        #self.node.appendChild(text_node)
+
+    def putCurrent_text(self):
         if len(self.cur_text):
             content = u''.join(self.cur_text)
             content = self.replaceRAW(content)
@@ -54,12 +65,6 @@ class Stylesheet(object):
             for a in expanded:
                 self.node.appendChild(a.cloneNode(True))
             self.cur_text = []
-        self.node = self.node.parentNode
-
-    def characters(self, content):
-        self.cur_text.append(content)
-        #text_node = self.doc.createTextNode(content)
-        #self.node.appendChild(text_node)
 
     def replaceRAW(self, text):
         for r in self.regulars:
