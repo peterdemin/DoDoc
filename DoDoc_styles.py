@@ -51,14 +51,8 @@ class Stylesheet(object):
             content = self.replaceRAW(content)
             expanded = self.expand(content)
             asd = False
-            if len(expanded) > 1:
-                asd = True
-                print '!', expanded
             for a in expanded:
                 self.node.appendChild(a.cloneNode(True))
-            if asd:
-                print '!!', self.node.toxml()
-                print '#', len(expanded), expanded
             self.cur_text = []
         self.node = self.node.parentNode
 
@@ -78,9 +72,6 @@ class Stylesheet(object):
         content_dom = xml.dom.minidom.parseString(raw_xml.encode('utf8'))
         Template.iterNode(content_dom, content_dom.firstChild, e)
         children = e.doc.firstChild.childNodes
-        if len(children) > 1:
-            for c in children:
-                print 'RAC', c.nodeType, c.toxml()
         return children
 
 class Expander(object):

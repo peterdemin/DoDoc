@@ -46,7 +46,7 @@ class Template(object):
         s = DoDoc_styles.Stylesheet_default()
         iterNode(r, r.firstChild, s)
         s.inject(s.doc)
-        result = s.doc.toprettyxml()
+        result = s.doc.toxml()
         self.image_urls = h.imageUrls()
         return result
 
