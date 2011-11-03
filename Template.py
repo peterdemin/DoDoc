@@ -2,13 +2,14 @@ import re
 import xml.sax
 import xml.dom.minidom
 from pprint import pprint
-
+import DoDoc_styles
 
 TAG_TABLE = u'table:table'
 TAG_ROW   = u'table:table-row'
 TAG_FRAME = u'draw:frame'
 TAG_IMAGE = u'draw:image'
 TAG_BREAK = u'text:line-break'
+TAG_TAB = u'text:tab'
 TAG_SECTION = u'text:section'
 SECTION_NAME = u'text:name'
 TAG_PARAGRAPH = u'text:p'
@@ -21,7 +22,8 @@ def setAttributes(doc, node, attributes):
 
 def iterNode(doc, node, callback):
     if node.nodeType == node.TEXT_NODE:
-        callback.characters(node.wholeText)
+        #print '=-=-=-=-=-=-', node.data
+        callback.characters(node.data)
     else:
         #print 'iterNode', node.tagName
         callback.startElement(node.tagName, node.attributes)
@@ -39,13 +41,17 @@ class Template(object):
     def render(self):
         h = Template_handler(self.params)
         xml.sax.parseString(self.xml_content, h)
-        result = h.resultXML()
+        r = h.render()
+        #print '###', r.toprettyxml()
+        s = DoDoc_styles.Stylesheet_default()
+        iterNode(r, r.firstChild, s)
+        s.inject(s.doc)
+        result = s.doc.toxml()
         self.image_urls = h.imageUrls()
         return result
 
     def imageUrls(self):
         return self.image_urls
-
 
 class Template_handler(xml.sax.handler.ContentHandler):
     def __init__(self, params = None):
@@ -364,7 +370,11 @@ class Parameters_finder(object):
         self.parameters = set()
 
     def startElement(self, name, attrs):
-        pass
+        if name == TAG_FRAME:
+            if type(attrs['draw:name']) == unicode:
+                self.parameters.add(attrs['draw:name'])
+            else:
+                self.parameters.add(attrs['draw:name'].nodeValue)
 
     def endElement(self, name):
         pass
@@ -377,9 +387,12 @@ class Parameters_finder(object):
 
 class Replacer(object):
     re_param = re.compile(ur'(?iu)\{([a-z0-9\._]+)\}')
-    re_hyphen = re.compile(ur'(?iu)\b-\b')
     BREAK_LINE = u'##LINE-BREAK-IN-REPLACEMENT##'
+    TAB = '\t'
+    re_hyphen = re.compile(ur'(?iu)\b-\b')
     nobr_hyphen = '\xe2\x80\x91'.decode('utf-8')
+    nobr_whitespace = '\xc2\xa0'.decode('utf-8')
+    nobr = '\xe2\x81\xa0'.decode('utf-8')
 
     def __init__(self, rdict = None, adict = None):
         self.doc = xml.dom.minidom.Document()
@@ -418,14 +431,21 @@ class Replacer(object):
             return matched.group(0)
 
     def characters(self, content):
+        #print '>>>', content
+        #raise ValueError(content)
         rcontent = self.re_param.sub(self.replacement, content)
         lines = rcontent.split(self.BREAK_LINE)
         for i, line in enumerate(lines):
-            text_node = self.doc.createTextNode(line)
             if i != 0:
                 break_node = self.doc.createElement(TAG_BREAK)
                 self.node.appendChild(break_node)
-            self.node.appendChild(text_node)
+            tab_parts = line.split(self.TAB)
+            for ti, part in enumerate(tab_parts):
+                if ti != 0:
+                    tab_node = self.doc.createElement(TAG_TAB)
+                    self.node.appendChild(tab_node)
+                text_node = self.doc.createTextNode(part)
+                self.node.appendChild(text_node)
 
 def testTable():
     source = u'<xml><table:table><table:table-row>\
@@ -563,6 +583,18 @@ def testNested_table():
     rendered_content_xml = t.render()
     print rendered_content_xml
 
+def testStyles():
+    source = ur'''
+<tagadam>
+    <text:text>
+        See t&lt;super&gt;e&lt;/super&gt;&lt;sub&gt;x&lt;/sub&gt;t in &lt;red&gt;RED&lt;/red&gt; color.
+    </text:text>
+</tagadam>'''
+    source = ''.join(filter(len, [a.strip() for a in source.splitlines()]))
+    parameters = { }
+    t = Template(source, parameters)
+    rendered_content_xml = t.render()
+    print rendered_content_xml
 
 def main():
     #return testTable_in_frame()
@@ -570,7 +602,8 @@ def main():
     #return testImage_and_table()
     #return testImage()
     #return testTable()
-    return testNested_table()
+    #return testNested_table()
+    return testStyles()
 
 if __name__ == '__main__':
     main()
