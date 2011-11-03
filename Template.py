@@ -387,10 +387,11 @@ class Parameters_finder(object):
 
 class Replacer(object):
     re_param = re.compile(ur'(?iu)\{([a-z0-9\._]+)\}')
-    re_hyphen = re.compile(ur'(?iu)\b-\b')
     BREAK_LINE = u'##LINE-BREAK-IN-REPLACEMENT##'
     TAB = '\t'
+    re_hyphen = re.compile(ur'(?iu)\b-\b')
     nobr_hyphen = '\xe2\x80\x91'.decode('utf-8')
+    nobr_whitespace = '\xc2\xa0'.decode('utf-8')
     nobr = '\xe2\x81\xa0'.decode('utf-8')
 
     def __init__(self, rdict = None, adict = None):
