@@ -23,7 +23,7 @@ class Parser(xml.sax.handler.ContentHandler):
         self.cur_images = []
         self.image_pathes = set()
         self.content = u''
-        self.odg2png = None
+        self.odg2wmf = None
         self.level = 0
 
     def pushTable(self):
@@ -125,8 +125,8 @@ class Parser(xml.sax.handler.ContentHandler):
             self.cur_name = None
         self.content = u''
         if self.level == 0:
-            if self.odg2png:
-                self.odg2png.disconnect()
+            if self.odg2wmf:
+                self.odg2wmf.disconnect()
 
     def characters(self, text):
         self.content+= text
@@ -137,34 +137,34 @@ class Parser(xml.sax.handler.ContentHandler):
             if os.path.splitext(path)[1].lower() == u'.odg':
                 return self.__parseODG(path)
             elif os.path.splitext(path)[1].lower() in [u'.wmf', u'.gif', u'.png']:
-                return self.__parsePNG(path)
+                return self.__parseImage_ready(path)
             else:
-                print (u'Error: Only .png and .odg images are allowed: "%s"' % (path)).encode('cp866', 'replace')
+                print (u'Error: Only .wmf, .gif, .png and .odg images are allowed: "%s"' % (path)).encode('cp866', 'replace')
         else:
             print (u'Error: No such image file: "%s"' % (path)).encode('cp866', 'replace')
         return []
 
-    def __parsePNG(self, png_path):
+    def __parseImage_ready(self, image_path):
         import shutil
-        output_filename = u'/'.join([u'Pictures', os.path.basename(png_path)])
+        output_filename = u'/'.join([u'Pictures', os.path.basename(image_path)])
         if not os.path.exists('Pictures'):
             os.mkdir('Pictures')
-        shutil.copy2(png_path, output_filename)
+        shutil.copy2(image_path, output_filename)
         return [output_filename]
 
     def __parseODG(self, odg_path):
-        pngs = []
-        output_filename = u'/'.join([u'Pictures', os.path.splitext(os.path.basename(odg_path))[0] + '.png'])
+        output_filename = u'/'.join([u'Pictures', os.path.splitext(os.path.basename(odg_path))[0] + '.wmf'])
         if not os.path.exists('Pictures'):
             os.mkdir('Pictures')
-        if not self.odg2png:
-            import odg2png
-            self.odg2png = odg2png.Odg2png()
-            self.odg2png.connect()
-        if self.odg2png.open(odg_path):
-            pngs = self.odg2png.savePNG(output_filename)
-            self.odg2png.close()
-        return pngs
+        if not self.odg2wmf:
+            import odg2wmf
+            self.odg2wmf = odg2wmf.Odg2wmf()
+            self.odg2wmf.connect()
+        wmfs = []
+        if self.odg2wmf.open(odg_path):
+            wmfs = self.odg2wmf.saveWMF(output_filename)
+            self.odg2wmf.close()
+        return wmfs
 
     def __parseCSV(self, attrs):
         if attrs.has_key(u'filename'):
