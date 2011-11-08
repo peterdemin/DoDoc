@@ -22,21 +22,29 @@ class DoXML(object):
             node_.appendChild(self.doc.createElement(name)).appendChild(self.doc.createTextNode(content))
         else:
             node_.appendChild(self.doc.createElement(name))
+        if node:
+            self.last = node
 
     def table(self, name, node = None):
         node_ = node or self.last or self.root
         self.last_table = node_.appendChild(self.doc.createElement(name))
+        if node:
+            self.last = node
         return self.last_table
 
     def row(self, node = None):
         node_ = node or self.last_table
         self.last = node_.appendChild(self.doc.createElement('ROW'))
+        if node:
+            self.last_table = node
         return self.last
 
     def image(self, name, image_path, node = None):
         node_ = node or self.last or self.root
         if type(image_path) != unicode:
             image_path = unicode(image_path)
+        if node:
+            self.last = node
         node_.appendChild(self.doc.createElement(name)).appendChild(self.doc.createElement(u'IMAGE')).appendChild(self.doc.createTextNode(image_path))
 
     def textRoot(self, name, content):
@@ -50,7 +58,7 @@ class DoXML(object):
 
     def save(self, filename):
         import codecs
-        codecs.open(filename, 'w', 'utf-8').write(self.doc.toprettyxml())
+        codecs.open(filename, 'w', 'utf-8').write(self.doc.toxml())
 
 def main():
     doc = DoXML()
