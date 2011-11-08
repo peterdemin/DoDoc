@@ -136,7 +136,7 @@ class Parser(xml.sax.handler.ContentHandler):
         if os.path.exists(path):
             if os.path.splitext(path)[1].lower() == u'.odg':
                 return self.__parseODG(path)
-            elif os.path.splitext(path)[1].lower() == u'.png':
+            elif os.path.splitext(path)[1].lower() in [u'.wmf', u'.gif', u'.png']:
                 return self.__parsePNG(path)
             else:
                 print (u'Error: Only .png and .odg images are allowed: "%s"' % (path)).encode('cp866', 'replace')

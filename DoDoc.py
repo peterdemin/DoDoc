@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 encoding='utf8'
 
-VERSION = '2.2.1'
+VERSION = '2.2.2'
 
 import os
 import sys
