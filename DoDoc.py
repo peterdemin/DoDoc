@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 encoding='utf8'
 
-VERSION = '2.2.2'
+VERSION = '2.3.0'
 
 import os
 import sys
@@ -39,14 +39,14 @@ def renderTemplate(template_path, template_parameters, result_path):
     rendered_content_xml = t.render()
     codecs.open(content_xml_path, 'w', 'utf-8').write(rendered_content_xml)
 
-    png_replacements = t.imageUrls()
-    for key in png_replacements.iterkeys():
-        value = png_replacements[key]
+    image_replacements = t.imageUrls()
+    for key in image_replacements.iterkeys():
+        value = image_replacements[key]
         for flow_chart_path in value:
             dest_path = os.path.join(temp_dir, flow_chart_path)
             shutil.copy2(flow_chart_path, dest_path)
-    replaceManifest(temp_dir, png_replacements)
-    cleanPictures(temp_dir, png_replacements.keys())
+    replaceManifest(temp_dir, image_replacements)
+    cleanPictures(temp_dir, image_replacements.keys())
 
     packAll(temp_dir, result_path)
     if os.path.exists('Pictures'):
@@ -54,24 +54,25 @@ def renderTemplate(template_path, template_parameters, result_path):
     if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
 
-def replaceManifest(dest_dir, png_replacements):
+def replaceManifest(dest_dir, image_replacements):
     import re
-    re_png = re.compile(ur'(?imu) <manifest:file\-entry manifest:media\-type="image\/png" manifest:full\-path="(Pictures\/[a-f0-9]+.png)"\/>')
-    png_pattern = ' <manifest:file-entry manifest:media-type="image/png" manifest:full-path="%s"/>'
+    re_image = re.compile(ur'(?imu) <manifest:file\-entry manifest:media\-type="image\/\w+" manifest:full\-path="(Pictures\/[a-f0-9]+\.\w+)"\/>')
+    image_pattern = ' <manifest:file-entry manifest:media-type="image/%(ext)s" manifest:full-path="%(path)s"/>'
 
     manifest_path = os.path.join(dest_dir, 'META-INF', 'manifest.xml')
     manifest_lines = open(manifest_path, 'rb').readlines()
     result = []
 
     for line in [a.rstrip() for a in manifest_lines]:
-        m = re_png.match(line)
+        m = re_image.match(line)
         if m:
-            source_png = m.group(1)
-            if png_replacements.has_key(source_png):
-                #print '-', source_png
-                for dest_png in png_replacements[source_png]:
-                    result.append(png_pattern % (dest_png))
-                    #print '+', dest_png
+            source_image = m.group(1)
+            if image_replacements.has_key(source_image):
+                #print '-', source_image
+                for dest_image in image_replacements[source_image]:
+                    ext = os.path.splitext(dest_image)[1][1:]
+                    result.append(image_pattern % {'path' : dest_image, 'ext' : ext})
+                    #print '+', dest_image
             else:
                 result.append(line)
         else:

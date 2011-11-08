@@ -4,6 +4,7 @@ copy /Y DoDoc_parameters_parser.py  Export\DoDoc_parameters_parser.py
 copy /Y import_uno.py               Export\import_uno.py
 copy /Y start_uno.py                Export\start_uno.py
 copy /Y odg2png.py                  Export\odg2png.py
+copy /Y odg2wmf.py                  Export\odg2wmf.py
 copy /Y odt2pdf.py                  Export\odt2pdf.py
 copy /Y OpenOffice_document.py      Export\OpenOffice_document.py
 copy /Y Template.py                 Export\Template.py
