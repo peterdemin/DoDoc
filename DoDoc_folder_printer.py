@@ -49,9 +49,9 @@ def odts_in_folder(folder_name):
                     if ext.lower() == '.odt':
                         odts.append(item_path)
         elif os.path.isfile(folder_name):
-            noext, ext = os.path.splitext(item_path)
+            noext, ext = os.path.splitext(folder_name)
             if ext.lower() == '.odt':
-                odts.append(item_path)
+                odts.append(folder_name)
     return odts
 
 def main():
