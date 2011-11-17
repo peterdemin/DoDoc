@@ -54,7 +54,7 @@ class DoXML(object):
         return self.table(name, self.root)
 
     def imageRoot(self, name, image_path):
-        self.image(self.root, name, image_path)
+        self.image(name, image_path, self.root)
 
     def save(self, filename):
         import codecs
