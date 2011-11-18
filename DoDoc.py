@@ -98,40 +98,57 @@ def DoDoc(template_path, xml_path, result_path):
         open(result_path, "ab").close()
     except IOError, e:
         print (u'ERROR: Can not open output file: "%s"' % (os.path.abspath(result_path))).encode('cp866', 'replace')
-        return
+        raise
     else:
         template_params = parseParameters_XML(open(xml_path, 'rb').read())
         renderTemplate(template_path, template_params, result_path)
 
-def main():
-    from optparse import OptionParser
-    opts = OptionParser()
-    opts.add_option("-t", "--template", dest="template_path",   help="input ODT template file path")
-    opts.add_option("-x", "--xml",      dest="xml_path",        help="input XML parameters file path")
-    opts.add_option("-o", "--output",   dest="result_path",     help="output ODT result file path")
-    opts.add_option("-v", "--version",  action="store_true", dest="version", default=False, help="print current version")
-    (options, args) = opts.parse_args()
-    if options.version:
-        print VERSION
-        return
-    if options.template_path:
-        template_path = options.template_path
-    else:
-        print 'ERROR: template path not specified. Use --help for command line arguments help.'
-        return
-    if options.xml_path:
-        xml_path = options.xml_path
-    else:
-        print 'ERROR: xml path not specified. Use --help for command line arguments help.'
-        return
-    if options.result_path:
-        result_path = options.result_path
-    else:
-        print 'WARNING: result path not specified. Use --help for command line arguments help.'
-        result_path = os.path.join(os.path.dirname(xml_path), u'%s_%s.odt' % (basefilename(template_path), basefilename(xml_path)))
-        print 'Using "%s" by default.' % (result_path,)
+def reportError(text):
+    import smtplib
+    from email.mime.text import MIMEText
+    open("error.log", "wt").write(text)
+    me = u'"DoDoc developer" <deminpe@otd263> (deminpe@otd263)'
+    msg = MIMEText(text.decode('cp866', 'replace').encode('utf8', 'replace'), 'plain', 'utf-8')
+    msg['From']     = me.encode('utf8')
+    msg['To']       = me.encode('utf8')
+    msg['Subject']  = u'DoDoc traceback'.encode('utf8')
+    s = smtplib.SMTP()
+    s.connect('mail.mars')
+    s.sendmail(me, [me], msg.as_string())
+    s.close()
 
-    DoDoc(template_path, xml_path, result_path)
+def main():
+    try:
+        from optparse import OptionParser
+        opts = OptionParser()
+        opts.add_option("-t", "--template", dest="template_path",   help="input ODT template file path")
+        opts.add_option("-x", "--xml",      dest="xml_path",        help="input XML parameters file path")
+        opts.add_option("-o", "--output",   dest="result_path",     help="output ODT result file path")
+        opts.add_option("-v", "--version",  action="store_true", dest="version", default=False, help="print current version")
+        (options, args) = opts.parse_args()
+        if options.version:
+            print VERSION
+            return
+        if options.template_path:
+            template_path = options.template_path
+        else:
+            print 'ERROR: template path not specified. Use --help for command line arguments help.'
+            return
+        if options.xml_path:
+            xml_path = options.xml_path
+        else:
+            print 'ERROR: xml path not specified. Use --help for command line arguments help.'
+            return
+        if options.result_path:
+            result_path = options.result_path
+        else:
+            print 'WARNING: result path not specified. Use --help for command line arguments help.'
+            result_path = os.path.join(os.path.dirname(xml_path), u'%s_%s.odt' % (basefilename(template_path), basefilename(xml_path)))
+            print 'Using "%s" by default.' % (result_path,)
+        DoDoc(template_path, xml_path, result_path)
+    except Exception, e:
+        import traceback
+        reportError(traceback.format_exc(30))
 
 if __name__ == '__main__':
     main()
