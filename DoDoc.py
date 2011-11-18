@@ -106,16 +106,20 @@ def DoDoc(template_path, xml_path, result_path):
 def reportError(text):
     import smtplib
     from email.mime.text import MIMEText
-    open("error.log", "wt").write(text)
+    open("DoDoc_error.log", "wt").write(text)
     me = u'"DoDoc developer" <deminpe@otd263> (deminpe@otd263)'
     msg = MIMEText(text.decode('cp866', 'replace').encode('utf8', 'replace'), 'plain', 'utf-8')
     msg['From']     = me.encode('utf8')
     msg['To']       = me.encode('utf8')
     msg['Subject']  = u'DoDoc traceback'.encode('utf8')
-    s = smtplib.SMTP()
-    s.connect('mail.mars')
-    s.sendmail(me, [me], msg.as_string())
-    s.close()
+    try:
+        s = smtplib.SMTP()
+        s.connect('mail.mars')
+        s.sendmail(me, [me], msg.as_string())
+        s.close()
+    except IOError, e:
+        print text
+        # something broken with ftp
 
 def main():
     try:
