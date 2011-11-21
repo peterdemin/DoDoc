@@ -45,5 +45,7 @@ setup( name = 'DoDoc',
                      r'DoDoc/DoDoc_styles',
                      r'DoDoc/DoXML',
                      r'DoDoc/DoDoc_folder_printer',
+                     r'DoDoc/DoDoc_error_reporter',
+                     r'DoDoc/DoDoc_inspector',
                      r'DoDoc/ods_parser'),
      )
