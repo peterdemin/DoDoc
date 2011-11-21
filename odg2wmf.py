@@ -44,12 +44,17 @@ class Odg2wmf(OpenOffice):
 
 def odg2wmf(input, output):
     result = None
-    o = Odg2wmf()
-    if o.connect():
-        if o.open(input):
-            result = o.saveWMF(output)
-            o.close()
-    o.disconnect()
+    try:
+        o = Odg2wmf()
+        if o.connect():
+            if o.open(input):
+                result = o.saveWMF(output)
+                o.close()
+        o.disconnect()
+    except Exception, e:
+        import traceback
+        import DoDoc_error_reporter
+        DoDoc_error_reporter.reportError(traceback.format_exc(30))
     return result
 
 def main():

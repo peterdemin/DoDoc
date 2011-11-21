@@ -6,13 +6,22 @@ import os
 import sys
 import smtplib
 from email.mime.text import MIMEText
+import DoDoc_inspector
 
 def reportError(text):
     me = u'"DoDoc developer" <deminpe@otd263> (deminpe@otd263)'
     message = os.path.abspath(os.curdir)
-    message+= u'\n'
+    message+= u'\n\n'
+
+    src_diff = DoDoc_inspector.hashDiff(os.path.join(os.path.dirname(__file__), 'dodoc_hashes.pkl'))
+    if len(src_diff):
+        message+= u'ATTENTION: Source changed:\n'
+        message+= src_diff
+    message+= u'\n\n'
+
     message+= u' '.join(sys.argv)
     message+= u'\n\n'
+
     message+= text.decode('cp866', 'replace')
     message = message.encode('utf8', 'replace')
     open("DoDoc_error.log", "wt").write(message)

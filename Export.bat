@@ -14,4 +14,5 @@ copy /Y DoXML.py                    Export\DoXML.py
 copy /Y DoDoc_folder_printer.py     Export\DoDoc_folder_printer.py
 copy /Y DoDoc_error_reporter.py     Export\DoDoc_error_reporter.py
 copy /Y DoDoc_inspector.py          Export\DoDoc_inspector.py
+copy /Y dodoc_hashes.pkl            Export\dodoc_hashes.pkl
 copy /Y README.txt                  Export\README.txt
