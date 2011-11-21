@@ -62,8 +62,8 @@ def main():
         print 'DoDoc_folder_printer prints all *.odt files in given folder.'
         print 'Usage:'
         print '    python DoDoc_folder_printer.py folder_name'
-        return
-        #folder_name = 'printme'
+        #return
+        folder_name = 'printme'
     inputs = odts_in_folder(folder_name)
     printODT(inputs)
 
