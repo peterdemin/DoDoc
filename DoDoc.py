@@ -103,24 +103,6 @@ def DoDoc(template_path, xml_path, result_path):
         template_params = parseParameters_XML(open(xml_path, 'rb').read())
         renderTemplate(template_path, template_params, result_path)
 
-def reportError(text):
-    import smtplib
-    from email.mime.text import MIMEText
-    open("DoDoc_error.log", "wt").write(text)
-    me = u'"DoDoc developer" <deminpe@otd263> (deminpe@otd263)'
-    msg = MIMEText(text.decode('cp866', 'replace').encode('utf8', 'replace'), 'plain', 'utf-8')
-    msg['From']     = me.encode('utf8')
-    msg['To']       = me.encode('utf8')
-    msg['Subject']  = u'DoDoc traceback'.encode('utf8')
-    try:
-        s = smtplib.SMTP()
-        s.connect('mail.mars')
-        s.sendmail(me, [me], msg.as_string())
-        s.close()
-    except IOError, e:
-        print text
-        # something broken with ftp
-
 def main():
     try:
         from optparse import OptionParser
@@ -152,7 +134,9 @@ def main():
         DoDoc(template_path, xml_path, result_path)
     except Exception, e:
         import traceback
-        reportError(traceback.format_exc(30))
+        import DoDoc_error_reporter
+        DoDoc_error_reporter.reportError(traceback.format_exc(30))
+
 
 if __name__ == '__main__':
     main()
