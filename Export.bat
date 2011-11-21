@@ -11,4 +11,6 @@ copy /Y Template.py                 Export\Template.py
 copy /Y DoDoc_styles.py             Export\DoDoc_styles.py
 copy /Y DoXML.py                    Export\DoXML.py
 copy /Y DoDoc_folder_printer.py     Export\DoDoc_folder_printer.py
+copy /Y DoDoc_error_reporter.py     Export\DoDoc_error_reporter.py
+copy /Y DoDoc_inspector.py          Export\DoDoc_inspector.py
 copy /Y README.txt                  Export\README.txt
