@@ -309,18 +309,22 @@ class Image_handler(Tag_handler):
         render_root = self.doc.createElement('root')
         if self.params.has_key(self.placeholder_name):
             images = self.params[self.placeholder_name]
-            assert( type(images) in (list, tuple) )
-            inserted_xlinks = []
-            for image in images:
-                attr_dict = {u'draw:name' : image, u'xlink:href' : image}
-                r = Replacer(self.params, attr_dict)
-                iterNode(self.doc, self.doc.firstChild, r)
-                render_root.appendChild(r.doc.firstChild)
-                inserted_xlinks.append(image)
-            if self.master.image_replacements.has_key(self.marker_xlink):
-                self.master.image_replacements[self.marker_xlink]+= inserted_xlinks
+            if images == u'':
+                if not self.master.image_replacements.has_key(self.marker_xlink):
+                    self.master.image_replacements[self.marker_xlink] = []
             else:
-                self.master.image_replacements[self.marker_xlink] = inserted_xlinks
+                assert( type(images) in (list, tuple) )
+                inserted_xlinks = []
+                for image in images:
+                    attr_dict = {u'draw:name' : image, u'xlink:href' : image}
+                    r = Replacer(self.params, attr_dict)
+                    iterNode(self.doc, self.doc.firstChild, r)
+                    render_root.appendChild(r.doc.firstChild)
+                    inserted_xlinks.append(image)
+                if self.master.image_replacements.has_key(self.marker_xlink):
+                    self.master.image_replacements[self.marker_xlink]+= inserted_xlinks
+                else:
+                    self.master.image_replacements[self.marker_xlink] = inserted_xlinks
         else:
             #print 'NO KEY', self.placeholder_name
             render_root.appendChild(self.doc.firstChild)

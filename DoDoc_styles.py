@@ -72,11 +72,15 @@ class Stylesheet(object):
         return text
 
     def expand(self, text):
-        e = Expander(self)
-        raw_xml = u'<tttt xmlns:style="a" xmlns:fo="b" xmlns:text="c">%s</tttt>' % (text)
-        content_dom = xml.dom.minidom.parseString(raw_xml.encode('utf8'))
-        Template.iterNode(content_dom, content_dom.firstChild, e)
-        children = e.doc.firstChild.childNodes
+        from xml.parsers.expat import ExpatError
+        try:
+            e = Expander(self)
+            raw_xml = u'<tttt xmlns:style="a" xmlns:fo="b" xmlns:text="c">%s</tttt>' % (text)
+            content_dom = xml.dom.minidom.parseString(raw_xml.encode('utf8'))
+            Template.iterNode(content_dom, content_dom.firstChild, e)
+            children = e.doc.firstChild.childNodes
+        except xml.parsers.expat.ExpatError, e:
+            children = [self.doc.createTextNode(text)]
         return children
 
 class Expander(object):

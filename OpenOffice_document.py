@@ -14,10 +14,11 @@ def progress(message):
     pass
 
 def error(message):
+    import sys
     if type(message) == unicode:
-        print message.encode('cp866', 'replace')
-    else:
-        print message
+        message = message.encode('cp866', 'replace')
+    sys.__stderr__.write(message)
+    raise Exception(message)
 
 class OpenOffice(object):
     def __init__(self):
@@ -90,7 +91,7 @@ class OpenOffice(object):
                 progress('Service polled ok')
                 return True
             else:
-                error('Error: soffice process unexpectadly terminated.')
+                error('Error: soffice process terminated unexpectadly.')
                 return False
         except OSError, e:
             error('Error: Can not start soffice (probably system path not set properly)')

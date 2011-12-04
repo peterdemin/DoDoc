@@ -25,12 +25,17 @@ class Odt2pdf(OpenOffice):
             return False
 
 def odt2pdf(input, output):
-    o = Odt2pdf()
-    if o.connect():
-        if o.open(input):
-            o.savePDF(output)
-            o.close()
-    o.disconnect()
+    try:
+        o = Odt2pdf()
+        if o.connect():
+            if o.open(input):
+                o.savePDF(output)
+                o.close()
+        o.disconnect()
+    except Exception, e:
+        import traceback
+        import DoDoc_error_reporter
+        DoDoc_error_reporter.reportError(traceback.format_exc(30))
     
 def main():
     import sys

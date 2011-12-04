@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 encoding='utf8'
 
-VERSION = '2.2.1'
+VERSION = '2.4.0'
 
 import os
 import sys
@@ -39,14 +39,14 @@ def renderTemplate(template_path, template_parameters, result_path):
     rendered_content_xml = t.render()
     codecs.open(content_xml_path, 'w', 'utf-8').write(rendered_content_xml)
 
-    png_replacements = t.imageUrls()
-    for key in png_replacements.iterkeys():
-        value = png_replacements[key]
+    image_replacements = t.imageUrls()
+    for key in image_replacements.iterkeys():
+        value = image_replacements[key]
         for flow_chart_path in value:
             dest_path = os.path.join(temp_dir, flow_chart_path)
             shutil.copy2(flow_chart_path, dest_path)
-    replaceManifest(temp_dir, png_replacements)
-    cleanPictures(temp_dir, png_replacements.keys())
+    replaceManifest(temp_dir, image_replacements)
+    cleanPictures(temp_dir, image_replacements.keys())
 
     packAll(temp_dir, result_path)
     if os.path.exists('Pictures'):
@@ -54,24 +54,25 @@ def renderTemplate(template_path, template_parameters, result_path):
     if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
 
-def replaceManifest(dest_dir, png_replacements):
+def replaceManifest(dest_dir, image_replacements):
     import re
-    re_png = re.compile(ur'(?imu) <manifest:file\-entry manifest:media\-type="image\/png" manifest:full\-path="(Pictures\/[a-f0-9]+.png)"\/>')
-    png_pattern = ' <manifest:file-entry manifest:media-type="image/png" manifest:full-path="%s"/>'
+    re_image = re.compile(ur'(?imu) <manifest:file\-entry manifest:media\-type="image\/\w+" manifest:full\-path="(Pictures\/[a-f0-9]+\.\w+)"\/>')
+    image_pattern = ' <manifest:file-entry manifest:media-type="image/%(ext)s" manifest:full-path="%(path)s"/>'
 
     manifest_path = os.path.join(dest_dir, 'META-INF', 'manifest.xml')
     manifest_lines = open(manifest_path, 'rb').readlines()
     result = []
 
     for line in [a.rstrip() for a in manifest_lines]:
-        m = re_png.match(line)
+        m = re_image.match(line)
         if m:
-            source_png = m.group(1)
-            if png_replacements.has_key(source_png):
-                #print '-', source_png
-                for dest_png in png_replacements[source_png]:
-                    result.append(png_pattern % (dest_png))
-                    #print '+', dest_png
+            source_image = m.group(1)
+            if image_replacements.has_key(source_image):
+                #print '-', source_image
+                for dest_image in image_replacements[source_image]:
+                    ext = os.path.splitext(dest_image)[1][1:]
+                    result.append(image_pattern % {'path' : dest_image, 'ext' : ext})
+                    #print '+', dest_image
             else:
                 result.append(line)
         else:
@@ -97,40 +98,45 @@ def DoDoc(template_path, xml_path, result_path):
         open(result_path, "ab").close()
     except IOError, e:
         print (u'ERROR: Can not open output file: "%s"' % (os.path.abspath(result_path))).encode('cp866', 'replace')
-        return
+        raise
     else:
         template_params = parseParameters_XML(open(xml_path, 'rb').read())
         renderTemplate(template_path, template_params, result_path)
 
 def main():
-    from optparse import OptionParser
-    opts = OptionParser()
-    opts.add_option("-t", "--template", dest="template_path",   help="input ODT template file path")
-    opts.add_option("-x", "--xml",      dest="xml_path",        help="input XML parameters file path")
-    opts.add_option("-o", "--output",   dest="result_path",     help="output ODT result file path")
-    opts.add_option("-v", "--version",  action="store_true", dest="version", default=False, help="print current version")
-    (options, args) = opts.parse_args()
-    if options.version:
-        print VERSION
-        return
-    if options.template_path:
-        template_path = options.template_path
-    else:
-        print 'ERROR: template path not specified. Use --help for command line arguments help.'
-        return
-    if options.xml_path:
-        xml_path = options.xml_path
-    else:
-        print 'ERROR: xml path not specified. Use --help for command line arguments help.'
-        return
-    if options.result_path:
-        result_path = options.result_path
-    else:
-        print 'WARNING: result path not specified. Use --help for command line arguments help.'
-        result_path = os.path.join(os.path.dirname(xml_path), u'%s_%s.odt' % (basefilename(template_path), basefilename(xml_path)))
-        print 'Using "%s" by default.' % (result_path,)
+    try:
+        from optparse import OptionParser
+        opts = OptionParser()
+        opts.add_option("-t", "--template", dest="template_path",   help="input ODT template file path")
+        opts.add_option("-x", "--xml",      dest="xml_path",        help="input XML parameters file path")
+        opts.add_option("-o", "--output",   dest="result_path",     help="output ODT result file path")
+        opts.add_option("-v", "--version",  action="store_true", dest="version", default=False, help="print current version")
+        (options, args) = opts.parse_args()
+        if options.version:
+            print VERSION
+            return
+        if options.template_path:
+            template_path = options.template_path
+        else:
+            print 'ERROR: template path not specified. Use --help for command line arguments help.'
+            return
+        if options.xml_path:
+            xml_path = options.xml_path
+        else:
+            print 'ERROR: xml path not specified. Use --help for command line arguments help.'
+            return
+        if options.result_path:
+            result_path = options.result_path
+        else:
+            print 'WARNING: result path not specified. Use --help for command line arguments help.'
+            result_path = os.path.join(os.path.dirname(xml_path), u'%s_%s.odt' % (basefilename(template_path), basefilename(xml_path)))
+            print 'Using "%s" by default.' % (result_path,)
+        DoDoc(template_path, xml_path, result_path)
+    except Exception, e:
+        import traceback
+        import DoDoc_error_reporter
+        DoDoc_error_reporter.reportError(traceback.format_exc(30))
 
-    DoDoc(template_path, xml_path, result_path)
 
 if __name__ == '__main__':
     main()

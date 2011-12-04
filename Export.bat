@@ -4,10 +4,15 @@ copy /Y DoDoc_parameters_parser.py  Export\DoDoc_parameters_parser.py
 copy /Y import_uno.py               Export\import_uno.py
 copy /Y start_uno.py                Export\start_uno.py
 copy /Y odg2png.py                  Export\odg2png.py
+copy /Y odg2wmf.py                  Export\odg2wmf.py
 copy /Y odt2pdf.py                  Export\odt2pdf.py
+copy /Y countPages.py               Export\countPages.py
 copy /Y OpenOffice_document.py      Export\OpenOffice_document.py
 copy /Y Template.py                 Export\Template.py
 copy /Y DoDoc_styles.py             Export\DoDoc_styles.py
 copy /Y DoXML.py                    Export\DoXML.py
 copy /Y DoDoc_folder_printer.py     Export\DoDoc_folder_printer.py
+copy /Y DoDoc_error_reporter.py     Export\DoDoc_error_reporter.py
+copy /Y DoDoc_inspector.py          Export\DoDoc_inspector.py
+copy /Y dodoc_hashes.pkl            Export\dodoc_hashes.pkl
 copy /Y README.txt                  Export\README.txt
