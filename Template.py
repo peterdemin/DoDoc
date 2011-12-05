@@ -42,11 +42,11 @@ class Template(object):
         h = Template_handler(self.params)
         xml.sax.parseString(self.xml_content, h)
         r = h.render()
-        #print '###', r.toprettyxml()
-        s = DoDoc_styles.Stylesheet_default()
-        iterNode(r, r.firstChild, s)
-        s.inject(s.doc)
-        result = s.doc.toxml()
+        result = r.toxml()
+        #s = DoDoc_styles.Stylesheet_default()
+        #iterNode(r, r.firstChild, s)
+        #s.inject(s.doc)
+        #result = s.doc.toxml()
         self.image_urls = h.imageUrls()
         return result
 
