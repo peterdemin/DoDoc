@@ -42,11 +42,11 @@ class Template(object):
         h = Template_handler(self.params)
         xml.sax.parseString(self.xml_content, h)
         r = h.render()
-        result = r.toxml()
-        #s = DoDoc_styles.Stylesheet_default()
+        #result = h.resultXML()
+        s = DoDoc_styles.Stylesheet_default.instance()
         #iterNode(r, r.firstChild, s)
-        #s.inject(s.doc)
-        #result = s.doc.toxml()
+        s.inject(r)
+        result = r.toxml()
         self.image_urls = h.imageUrls()
         return result
 
@@ -400,6 +400,7 @@ class Replacer(object):
 
     def __init__(self, rdict = None, adict = None):
         self.doc = xml.dom.minidom.Document()
+        self.stylesheet = DoDoc_styles.Stylesheet_default.instance()
         self.node = None
         self.rdict = rdict or {}
         self.adict = adict or {}
@@ -426,6 +427,7 @@ class Replacer(object):
     def replacement(self, matched):
         key = matched.group(1)
         if self.rdict.has_key(key):
+            self.something_replaced = True
             value = self.rdict[key]
             value = self.re_hyphen.sub(self.nobr_hyphen, value)
             lines = [a.strip() for a in value.split('#BR#')]
@@ -437,6 +439,7 @@ class Replacer(object):
     def characters(self, content):
         #print '>>>', content
         #raise ValueError(content)
+        self.something_replaced = False
         rcontent = self.re_param.sub(self.replacement, content)
         lines = rcontent.split(self.BREAK_LINE)
         for i, line in enumerate(lines):
@@ -448,8 +451,13 @@ class Replacer(object):
                 if ti != 0:
                     tab_node = self.doc.createElement(TAG_TAB)
                     self.node.appendChild(tab_node)
-                text_node = self.doc.createTextNode(part)
-                self.node.appendChild(text_node)
+                if self.something_replaced:
+                    styled = self.stylesheet.apply(self.doc, part)
+                    for c in styled:
+                        self.node.appendChild(c.cloneNode(True))
+                else:
+                    text_node = self.doc.createTextNode(part)
+                    self.node.appendChild(text_node)
 
 def testTable():
     source = u'<xml><table:table><table:table-row>\
@@ -591,11 +599,14 @@ def testStyles():
     source = ur'''
 <tagadam>
     <text:text>
-        See t&lt;super&gt;e&lt;/super&gt;&lt;sub&gt;x&lt;/sub&gt;t in &lt;red&gt;RED&lt;/red&gt; color.
+        {text}
     </text:text>
 </tagadam>'''
+    parameters = {
+                  u'text' : ur'See t<super>e</super><sub>x</sub>t in <red>RED</red> colo<b>r</b>.',
+                  #u'text' : ur'See t&lt;super&gt;e&lt;/super&gt;&lt;sub&gt;x&lt;/sub&gt;t in &lt;red&gt;RED&lt;/red&gt; color.',
+                  }
     source = ''.join(filter(len, [a.strip() for a in source.splitlines()]))
-    parameters = { }
     t = Template(source, parameters)
     rendered_content_xml = t.render()
     print rendered_content_xml
