@@ -1,11 +1,11 @@
-#Copyright Jon Berg , turtlemeat.com
-
 import os
 import re
 import cgi
 import time
 import mimetypes
-from os import curdir, sep
+import email.parser
+import json
+import hashlib
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 class Server_API(object):
@@ -55,7 +55,7 @@ class MyHandler(BaseHTTPRequestHandler):
                 self.wfile.write(open('favicon.ico', 'rb').read())
                 return
             if self.path.endswith(".html"):
-                f = open(curdir + sep + self.path) #self.path has /test.html
+                f = open(os.curdir + os.sep + self.path) #self.path has /test.html
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
@@ -80,44 +80,55 @@ class MyHandler(BaseHTTPRequestHandler):
         self.wfile.write(text)
 
     def do_POST(self):
-        global rootnode
+        print 'do_POST'
         url_handler = self.getHandler(self.path)
         if url_handler:
-            return url_handler()
-        try:
-            ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
-            if ctype == 'multipart/form-data':
-                query=cgi.parse_multipart(self.rfile, pdict)
-            else:
-                self.send_error(500, 'POST with not multipart/form-data')
-                return
-            self.send_response(301)
-            self.end_headers()
-            upfilecontent = query.get('upfile')
-            print "filecontent", upfilecontent[0]
-            self.wfile.write("<HTML>POST OK.<BR><BR>");
-            self.wfile.write(upfilecontent[0]);
-        except Exception, e:
-            print e.what()
+            url_handler()
+        else:
+            print 'Can NOT handle', self.path
 
     def addODG(self):
-        print '>> addODG'
-        content_type = self.headers.getheader('content-type')
-        if content_type:
-            ctype, pdict = cgi.parse_header(content_type)
-            if ctype == 'multipart/form-data':
-                print 'Found multipart/form-data'
-                form = cgi.FieldStorage(self.rfile, self.headers)
-                self.sendText('%s' % (form.filename))
-                print form.filename
-                return
-            else:
-                print 'Not multipart/form-data'
-                self.send_error(500, 'POST with not multipart/form-data')
-                return
+        size = int(self.headers['content-length'])
+        content = 'content-type: %s\n\n' % (self.headers['content-type'])
+        content+= self.rfile.read(size)
+        open('request.txt', 'wb').write(content)
+        message = email.parser.Parser().parsestr(content)
+        payload = message.get_payload()
+        new_filename = None
+        self.send_response(200)
+        self.end_headers()
+        post_processing = []
+        print '!'
+        for part in payload:
+            parameters = dict(filter(lambda b: len(b)==2, [a.strip().split('=') for a in part['Content-Disposition'].split(';')]))
+            if parameters.has_key('name') and parameters['name'] == '"upfile"':
+                filename = parameters['filename'].strip('"')
+                basename, ext = os.path.splitext(filename)
+                if ext.lower() == '.odg':
+                    file_content = part.get_payload(decode=True)
+                    new_filename = hashlib.md5(file_content).hexdigest()
+                    if not os.path.exists(new_filename):
+                        open(new_filename, 'wb').write(file_content)
+                        post_processing.append({filename : new_filename})
+        print len(post_processing)
+        if len(post_processing):
+            self.wfile.write(json.dumps(post_processing))
         else:
-            self.send_error(500, 'POST with no content-type')
-            print 
+            self.wfile.write(json.dumps({'error' : 'no payload'}))
+        self.wfile.flush()
+        self.connection.shutdown(1)
+        if len(post_processing):
+            from DoDoc.odg2png import Odg2png
+            result = None
+            o = Odg2png()
+            if o.connect():
+                for origin, input in post_processing:
+                    print input
+                    if o.open(input):
+                        output = input + '.png'
+                        result = o.savePNG(output)
+                        o.close()
+            o.disconnect()
 
     def hasODG(self, params):
         self.send_response(200)
