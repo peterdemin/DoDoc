@@ -1,7 +1,7 @@
-from DoXML import DoXML
-import Template
-import xml.dom.minidom
 import re
+import xml.dom.minidom
+from xml.parsers.expat import ExpatError
+import Template
 
 class Stylesheet(object):
     def __init__(self):
@@ -15,9 +15,11 @@ class Stylesheet(object):
 
     def inject(self, document):
         root = document.firstChild # office:document-content
-        doc_styles = root.getElementsByTagName('office:automatic-styles')[0]
-        for node in self.style_root.childNodes:
-            doc_styles.appendChild(node.cloneNode(True))
+        elements = root.getElementsByTagName('office:automatic-styles')
+        if len(elements) == 1:
+            doc_styles = elements[0]
+            for node in self.style_root.childNodes:
+                doc_styles.appendChild(node.cloneNode(True))
 
     def addStyle(self, name, attributes):
         #self.styles[name] = replacement
@@ -61,7 +63,6 @@ class Stylesheet(object):
             content = u''.join(self.cur_text)
             content = self.replaceRAW(content)
             expanded = self.expand(content)
-            asd = False
             for a in expanded:
                 self.node.appendChild(a.cloneNode(True))
             self.cur_text = []
@@ -71,41 +72,29 @@ class Stylesheet(object):
             text = r[0].sub(r[1], text)
         return text
 
-    def expand(self, text):
-        from xml.parsers.expat import ExpatError
+    def expand(self, text, doc_ = None):
+        if doc_:
+            doc = doc_
+        else:
+            doc = self.doc
         try:
-            e = Expander(self)
             raw_xml = u'<tttt xmlns:style="a" xmlns:fo="b" xmlns:text="c">%s</tttt>' % (text)
             content_dom = xml.dom.minidom.parseString(raw_xml.encode('utf8'))
-            Template.iterNode(content_dom, content_dom.firstChild, e)
-            children = e.doc.firstChild.childNodes
+            children = content_dom.firstChild.cloneNode(True).childNodes
         except xml.parsers.expat.ExpatError, e:
-            children = [self.doc.createTextNode(text)]
+            #print 'FAILED EXPAND:', text
+            children = [doc.createTextNode(text).cloneNode(True)]
         return children
 
-class Expander(object):
-    def __init__(self, stylesheet):
-        self.stylesheet = stylesheet
-        self.doc = xml.dom.minidom.Document()
-        self.node = None
-
-    def startElement(self, name, attrs):
-        if not self.node:
-            self.node = self.doc.createElement(name)
-            self.doc.appendChild(self.node)
+    def apply(self, doc, text):
+        if len(text.strip()):
+            return self.expand(self.replaceRAW(text), doc)
         else:
-            elem = self.doc.createElement(name)
-            self.node = self.node.appendChild(elem)
-        Template.setAttributes(self.doc, self.node, attrs)
-
-    def endElement(self, name):
-        self.node = self.node.parentNode
-
-    def characters(self, content):
-        text_node = self.doc.createTextNode(content)
-        self.node.appendChild(text_node)
+            return [doc.createTextNode(text).cloneNode(True)]
 
 class Stylesheet_default(Stylesheet):
+    __instance = None
+
     def __init__(self):
         super(Stylesheet_default, self).__init__()
         self.addStyle('sub', {'style:text-position' : "sub 58%"})
@@ -116,12 +105,25 @@ class Stylesheet_default(Stylesheet):
         self.addStyle('b', {'fo:font-weight' : "bold", 'style:font-weight-complex' : 'bold'})
         self.addStyle('i', {'fo:font-style' : "italic", 'style:font-style-complex' : 'italic'})
         self.addStyle('u', {'fo:text-underline-width' : "auto", 'style:text-underline-style' : 'solid', 'style:text-underline-color' : 'font-color'})
-        
+
+    @staticmethod
+    def instance():
+        Stylesheet_default.__instance = Stylesheet_default()
+        Stylesheet_default.instance = Stylesheet_default.__instance.__return_initialized
+        return Stylesheet_default.__instance
+
+    def __return_initialized(self):
+        return self.__instance
+
 def test():
+    from DoXML import DoXML
     doc = DoXML()
     s = Stylesheet_default()
-    raw_xml = '<test>Text of <red>Red color</red></test>'
-    source = xml.dom.minidom.parseString(raw_xml)
+    doc.table('a')
+    doc.row()
+    doc.text('test', u'Text of <red>Red</red> color')
+    #raw_xml = '<test></test>'
+    source = xml.dom.minidom.parseString(doc.doc.toxml().encode('utf8'))
     Template.iterNode(source, source.firstChild, s)
     print s.doc.toprettyxml()
 
