@@ -216,14 +216,21 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 re.compile(r'(?i)/shutdown/') : shutdown,
                }
 
-class ThreadingHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
-    """HTTP server, that uses multiple processes to handle requests"""
+unused_uno_port = 2003
+uno_lock = threading.RLock()
+
+def getUnused_port():
+    global unused_uno_port
+    with uno_lock:
+        r = unused_uno_port
+        unused_uno_port+= 1
+        return r
 
 class SocketHandler(SocketServer.StreamRequestHandler):
-    unused_uno_port = 2003
-
     def handle(self):
+        print 'Worker connected:', self.client_address
         if(self.setupWorker()):
+            print 'Worker added:', self.client_address
             while(True):
                 payload = self.getTask()
                 self.wfile.write(payload + '\n')
@@ -240,24 +247,30 @@ class SocketHandler(SocketServer.StreamRequestHandler):
             self.task['callback'](result)
 
     def setupWorker(self):
-        self.wfile.write(json.dumps({'port' : self.unused_uno_port}) + '\n')
+        self.wfile.write(json.dumps({'port' : getUnused_port()}) + '\n')
         answer = json.loads(self.rfile.readline().strip())
         if answer['result'] == True:
             self.task = tasks.createWorker()
-            self.unused_uno_port+= 1
             return True
         else:
             return False
 
+class ThreadingSocketServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+    """Socket server, that uses multiple processes to handle requests"""
+
 def startServer():
     try:
-        server = SocketServer.TCPServer(('localhost', 5555), SocketHandler)
+        #server = SocketServer.TCPServer(('localhost', 5555), SocketHandler)
+        server = ThreadingSocketServer(('localhost', 5555), SocketHandler)
         server.serve_forever()
     except socket.error, e:
         if e.errno == 10048:
             print 'Server allready running'
         else:
             raise
+
+class ThreadingHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
+    """HTTP server, that uses multiple processes to handle requests"""
 
 def main():
     server_thread = threading.Thread(target=startServer)

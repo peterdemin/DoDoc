@@ -74,19 +74,31 @@ def ping():
 
 #ping()
 
-datas = []
-for filename in filenames:
-    datas.append(composeForm_data([], [('upfile', os.path.basename(filename), open(filename, 'rb').read())]))
-    print '.',
-print
+def main():
+    server_host = 'http://127.0.0.1:8080'
 
-session = {}
-for data in datas:
-    cur_session = json.loads(postComposed('http://127.0.0.1/add/', data))
-    session.update(cur_session)
-    #pprint(cur_session)
-command = {'template' : 'TT.odt', 'xml' : 'koi_h_TT.xml'}
-result = json.loads(postForm_data('http://127.0.0.1/dodoc/', [('session', json.dumps(session)), ('command', json.dumps(command))], []))
-pprint(result)
-open('client-data/result.odt', 'wb').write(urllib2.urlopen('http://127.0.0.1/' + result['odt']).read())
-os.startfile(r'client-data\result.odt')
+    #filename = 'client-data/bshv000_SpkRG.odg'
+    #data = composeForm_data([], [('upfile', os.path.basename(filename), open(filename, 'rb').read())])
+    #print json.loads(postComposed(server_host + '/add/', data))
+    #return
+
+    datas = []
+    for filename in filenames:
+        datas.append(composeForm_data([], [('upfile', os.path.basename(filename), open(filename, 'rb').read())]))
+        print '.',
+    print
+
+    session = {}
+    for data in datas:
+        cur_session = json.loads(postComposed(server_host + '/add/', data))
+        session.update(cur_session)
+    command = {'template' : 'TT.odt', 'xml' : 'koi_h_TT.xml'}
+    result = json.loads(postForm_data(server_host + '/dodoc/', [('session', json.dumps(session)),
+                                                                ('command', json.dumps(command))],
+                                      []))
+    pprint(result)
+    open('client-data/result.odt', 'wb').write(urllib2.urlopen(server_host + '/' + result['odt']).read())
+    os.startfile(r'client-data\result.odt')
+
+if __name__ == '__main__':
+    main()

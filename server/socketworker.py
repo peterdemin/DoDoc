@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 import json
@@ -5,43 +6,47 @@ import socket
 import DoDoc.DoDoc_parameters_parser
 import DoDoc.odg2wmf
 import DoDoc.odt2pdf
+import DoDoc.DoDoc
 import xml.sax
 import glob
 
 uno_port = 2002
 
-def odg2wmf(odg):
+def odg2wmf(con, odg):
     global uno_port
     lock_name = os.path.join(os.path.dirname(odg), 'in-progress.lock')
     input = odg
     output = input + '.wmf'
     o = DoDoc.odg2wmf.Odg2wmf()
-    if o.connect(uno_port):
-        print 'start', input
-        if o.open(input):
-            result = o.saveWMF(output)
-            o.close()
-            print 'done', output
+    o.setConnection(con)
+    print 'start', input
+    if o.open(input):
+        result = o.saveWMF(output)
+        o.close()
+        print 'done', output
     o.disconnect()
     os.remove(lock_name)
 
-def odt2pdf(input, output):
+def odt2pdf(con, input, output):
     global uno_port
     input_lock  = input + '.in-progress.lock'
     while os.path.exists(input_lock):
         time.sleep(0.1)
     output_lock = output + '.in-progress.lock'
     o = DoDoc.odt2pdf.Odt2pdf()
-    if o.connect(uno_port):
-        print 'start', input
-        if o.open(input):
-            result = o.savePDF(output)
-            o.close()
-            print 'done', output
+    o.setConnection(con)
+    print 'start', input
+    if o.open(input):
+        result = o.savePDF(output)
+        o.close()
+        print 'done', output
+    else:
+        print 'Can NOT open input file'
+        return False
     o.disconnect()
-    os.remove(lock_name)
+    os.remove(output_lock)
 
-def dodoc(self, template, xml, mappings):
+def dodoc(template, xml, mappings):
     if(mappings.has_key(xml)):
         xml = mappings[xml]
     for dirname in mappings.itervalues():
@@ -62,7 +67,7 @@ def dodoc(self, template, xml, mappings):
     result_odt = '%s_%s.odt' % (os.path.splitext(os.path.basename(template))[0], xml)
     result_pdf = '%s_%s.pdf' % (os.path.splitext(os.path.basename(template))[0], xml)
     if not os.path.exists(result_odt):
-        template_params = parseDoDoc_XML(open(command['xml'], 'rb').read(), file_mappings)
+        template_params = parseDoDoc_XML(open(command['xml'], 'rb').read(), mappings)
         template = os.path.join('templates', command['template'])
         #print result_odt
         DoDoc.DoDoc.renderTemplate(template, template_params, result_odt)
@@ -74,7 +79,8 @@ class MappingParser(DoDoc.DoDoc_parameters_parser.Parser):
         self.mappings = mappings
         DoDoc.DoDoc_parameters_parser.Parser.__init__(self)
 
-    def __parseIMAGE(self):
+    def parseIMAGE(self):
+        print 'subclassed __parseImage_ready from', self.__class__
         path = self.content
         if os.path.splitext(path)[1].lower() == u'.odg':
             return self.__parseODG(path)
@@ -85,8 +91,9 @@ class MappingParser(DoDoc.DoDoc_parameters_parser.Parser):
         return []
 
     def __parseODG(self, odg_path):
-        if mappings.has_key(odg_path):
-            dir_name = mappings[odg_path]
+        print 'subclassed __parseODG from', self.__class__
+        if self.mappings.has_key(odg_path):
+            dir_name = self.mappings[odg_path]
             wmfs = glob.glob(os.path.join(dir_name, '*.wmf'))
             print 'mapped', wmfs
             return wmfs
@@ -102,8 +109,10 @@ HOST, PORT = "127.0.0.1", 5555
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((HOST, PORT))
+print 'Connected'
 command = json.loads(sock.recv(4096).strip())
-uno_port = int(command['port'])
+uno_port = command['port']
+print 'Port received:', uno_port
 o = DoDoc.OpenOffice_document.OpenOffice()
 uno_connected = o.connect(uno_port)
 sock.send(json.dumps({'result': uno_connected}) + "\n")
@@ -114,18 +123,20 @@ if uno_connected:
             print 'Waiting for command'
             command = json.loads(sock.recv(4096).strip())
             if command['op'] == 'odg2wmf':
-                odg2wmf(command['odg'])
+                odg2wmf(o.connection(), command['odg'])
                 sock.send(json.dumps({'result' : True}) + '\n')
             elif command['op'] == 'odt2pdf':
-                odt2pdf(command['odt'], command['pdf'])
+                odt2pdf(o.connection(), command['odt'], command['pdf'])
                 sock.send(json.dumps({'result' : True}) + '\n')
             elif command['op'] == 'dodoc':
                 result = dodoc(command['template'], command['xml'], command['session'])
                 sock.send(json.dumps({'result' : result}) + '\n')
             else:
-                sock.send(json.dumps({'result' : False, 'reason' : 'Not recognized op'}) + '\n')
+                sock.send(json.dumps({'result' : False, 'reason' : 'Unrecognized op'}) + '\n')
+                print 'Unrecognized op:', command['op']
     except Exception, e:
         print "Exception occured:"
-        print e
+        import traceback
+        print traceback.format_exc(30)
     o.disconnect()
 sock.close()

@@ -109,7 +109,7 @@ class Parser(xml.sax.handler.ContentHandler):
         elif name == self.tag_cdr:
             self.cur_name = self.table_names[-1]
         elif name == self.tag_image:
-            self.cur_images.extend(self.__parseIMAGE())
+            self.cur_images.extend(self.parseIMAGE())
         elif name == self.in_image:
             if len(self.table_names):
                 self.cur_row[self.in_image].extend(self.cur_images)
@@ -131,7 +131,8 @@ class Parser(xml.sax.handler.ContentHandler):
     def characters(self, text):
         self.content+= text
 
-    def __parseIMAGE(self):
+    def parseIMAGE(self):
+        print 'parseIMAGE from', self.__class__
         path = self.content
         if os.path.exists(path):
             if os.path.splitext(path)[1].lower() == u'.odg':
