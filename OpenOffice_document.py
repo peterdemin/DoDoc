@@ -27,14 +27,14 @@ class OpenOffice(object):
         self.connected_context = None
         self.service_started_by_me = False
 
-    def connect(self):
+    def connect(self, port=2002):
         start_attempted = False
         connection_attempts = 0
         while not self.connected_context:
             try:
                 progress('Attempting to connect...')
                 connection_attempts+= 1
-                self.connected_context = self.resolveURL('uno:socket,host=localhost,port=2002;urp;StarOffice.ComponentContext')
+                self.connected_context = self.resolveURL('uno:socket,host=localhost,port=%d;urp;StarOffice.ComponentContext' % (port))
                 progress('Connected.')
             except NoConnectException, e:
                 progress('Connection failed.')
@@ -47,7 +47,7 @@ class OpenOffice(object):
                         error('soffice service started, but connection could not be made.')
                 else:
                     progress('Starting service...')
-                    if self.startService():
+                    if self.startService(port):
                         start_attempted = True
                     else:
                         return False
@@ -82,10 +82,10 @@ class OpenOffice(object):
         progress('Disposed document.')
         pass
 
-    def startService(self):
+    def startService(self, port):
         import subprocess
         try:
-            soffice = subprocess.Popen(["soffice", "-headless", "-nofirststartwizard", "-accept=socket,host=localhost,port=2002;urp;"])
+            soffice = subprocess.Popen(["soffice", "-headless", "-nofirststartwizard", "-accept=socket,host=localhost,port=%d;urp;" % (port)])
             if None == soffice.poll():
                 self.service_started_by_me = True
                 progress('Service polled ok')

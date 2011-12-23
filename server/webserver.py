@@ -1,19 +1,57 @@
 import os
 import time
 import re
-import cgi
 import time
+import socket
+import threading
 import mimetypes
 import email.parser
 import json
 import hashlib
+import SocketServer
 import BaseHTTPServer
-from SocketServer import ThreadingMixIn
+
+# monkey-patching bug:
+BaseHTTPServer.BaseHTTPRequestHandler.address_string = lambda self: self.client_address[0]
+
+class Tasks(object):
+    def __init__(self):
+        self.workers = []
+        self.workers_lock = threading.RLock()
+
+    def createWorker(self):
+        worker = {}
+        worker['busy'] = False
+        worker['event'] = threading.BoundedSemaphore(1)
+        worker['event'].acquire()
+        worker['payload'] = None
+        with self.workers_lock:
+            self.workers.append(worker)
+        return worker
+
+    def addTask(self, payload, callback = None):
+        while(True):
+            with self.workers_lock:
+                for w in self.workers:
+                    if not w['busy']:
+                        w['busy'] = True
+                        w['payload'] = payload
+                        if(callback):
+                            w['callback'] = callback
+                        else:
+                            if w.has_key('callback'):
+                                w.pop('callback')
+                        w['event'].release()
+                        return
+            # Everyone is busy
+            time.sleep(0.1)
+        
+tasks  = Tasks()
+
 
 class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super(MyHandler, self).__init__(*args, **kwargs)
-        print '__init__'
+        BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
 
     def getHandler(self, request_path):
         for pattern, handler in self.handlers.iteritems():
@@ -71,7 +109,6 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.wfile.write(text)
 
     def do_POST(self):
-        print 'do_POST'
         url_handler = self.getHandler(self.path)
         if url_handler:
             url_handler()
@@ -88,7 +125,6 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         new_filename = None
         self.send_response(200)
         self.end_headers()
-        post_processing = {}
         result = {}
         for part in payload:
             parameters = dict(filter(lambda b: len(b)==2, [a.strip().split('=') for a in part['Content-Disposition'].split(';')]))
@@ -104,7 +140,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                         open(os.path.join(new_dirname, 'in-progress.lock'), 'wt').write('!')
                         new_filename = os.path.join(new_dirname, filename)
                         open(new_filename, 'wb').write(file_content)
-                        post_processing[filename] = new_filename
+                        tasks.addTask(json.dumps({'op' : 'odg2wmf', 'odg' : new_filename, 'wmf' : new_filename + '.odg'}))
                 elif ext.lower() == '.xml':
                     file_content = part.get_payload(decode=True)
                     new_filename = hashlib.md5(file_content).hexdigest()
@@ -117,24 +153,6 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({'error' : 'no payload'}))
         self.wfile.flush()
         self.connection.shutdown(1)
-        if len(post_processing):
-            print post_processing.values()
-            self.convertODGs(post_processing.values())
-            for filename in post_processing.itervalues():
-                os.remove(os.path.join(os.path.dirname(filename), 'in-progress.lock'))
-
-    def convertODGs(self, odg_filenames):
-        from DoDoc.odg2wmf import Odg2wmf
-        result = None
-        o = Odg2wmf()
-        if o.connect():
-            for input in odg_filenames:
-                print input
-                if o.open(input):
-                    output = input + '.wmf'
-                    result = o.saveWMF(output)
-                    o.close()
-        o.disconnect()
 
     def dodoc(self):
         size = int(self.headers['content-length'])
@@ -157,38 +175,36 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if len(command):
             if(file_mappings.has_key(command['xml'])):
                 command['xml'] = file_mappings[command['xml']]
-        for dirname in file_mappings.itervalues():
-            watchdog = int(50 / 0.1)
-            while not os.path.exists(dirname):
-                time.sleep(0.1)
-                watchdog-= 1
-                if watchdog == 0:
-                    return self.wfile.write(json.dumps({'error' : dirname + ' seems to be broken'}))
-            while os.path.exists(os.path.join(dirname, 'in-progress.lock')):
-                time.sleep(0.1)
-                watchdog-= 1
-                if watchdog == 0:
-                    return self.wfile.write(json.dumps({'error' : dirname + ' seems to be broken'}))
+
         result_odt = '%s_%s.odt' % (os.path.splitext(os.path.basename(command['template']))[0], command['xml'])
         result_pdf = '%s_%s.pdf' % (os.path.splitext(os.path.basename(command['template']))[0], command['xml'])
+        if not os.path.exists(result_odt):
+            open(result_odt + '.in-progress.lock', 'wt').write('webserver.dodoc')
+            tasks.addTask(json.dumps({'op' : 'dodoc',
+                                      'xml' : command['xml'],
+                                      'template' : command['template'],
+                                      'session' : file_mappings}))
+        if not os.path.exists(result_pdf):
+            open(result_pdf + '.in-progress.lock', 'wt').write('webserver.dodoc')
+            tasks.addTask(json.dumps({'op' : 'odt2pdf',
+                                      'odt' : result_odt,
+                                      'pdf' : result_pdf}))
         self.wfile.write(json.dumps({'odt' : result_odt, 'pdf' : result_pdf}))
         self.wfile.flush()
         self.connection.shutdown(1)
-        if not os.path.exists(result_odt):
-            from DoDoc import DoDoc
-            template_params = parseDoDoc_XML(open(command['xml'], 'rb').read(), file_mappings)
-            template = os.path.join('templates', command['template'])
-            #print result_odt
-            DoDoc.renderTemplate(template, template_params, result_odt)
-        if not os.path.exists(result_pdf):
-            #print result_pdf
-            from DoDoc.odt2pdf import odt2pdf
-            odt2pdf(result_odt, result_pdf)
 
     def ping(self):
         self.send_response(200)
         self.end_headers()
         self.wfile.write('pong')
+
+    def shutdown(self):
+        global terminate_server
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write('shutting down')
+        #server.shutdown()
+        terminate_server = True
 
     def address_string(self):
         return self.client_address[0]
@@ -197,47 +213,72 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 re.compile(r'(?i)/dodoc/') : dodoc,
                 re.compile(r'(?i)/add/') : add,
                 re.compile(r'(?i)/ping/') : ping,
+                re.compile(r'(?i)/shutdown/') : shutdown,
                }
 
-import xml.sax
-import glob
-from DoDoc.DoDoc_parameters_parser import Parser, expandImages_in_tables
-
-class MappingParser(Parser):
-    def __init__(self, mappings):
-        self.mappings = mappings
-        Parser.__init__(self)
-
-    def __parseODG(self, odg_path):
-        if mappings.has_key(odg_path):
-            dir_name = mappings[odg_path]
-            return glob.glob(os.path.join(dir_name, '*.wmf'))
-
-def parseDoDoc_XML(xml_content, file_mappings):
-    p = MappingParser(file_mappings)
-    xml.sax.parseString(xml_content, p)
-    return expandImages_in_tables(p.tree)
-    return p.tree
-
-class ThreadingHTTPServer(ThreadingMixIn, BaseHTTPServer.HTTPServer):
+class ThreadingHTTPServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
     """HTTP server, that uses multiple processes to handle requests"""
 
-def _bare_address_string(self):
-    host, port = self.client_address[:2]
-    return str(host)
+class SocketHandler(SocketServer.StreamRequestHandler):
+    unused_uno_port = 2003
 
-BaseHTTPServer.BaseHTTPRequestHandler.address_string = _bare_address_string
+    def handle(self):
+        if(self.setupWorker()):
+            while(True):
+                payload = self.getTask()
+                self.wfile.write(payload + '\n')
+                result = self.rfile.readline().strip()
+                self.finishTask(result)
+
+    def getTask(self):
+        self.task['event'].acquire()
+        return self.task['payload']
+
+    def finishTask(self, result):
+        self.task['busy'] = False
+        if self.task.has_key('callback'):
+            self.task['callback'](result)
+
+    def setupWorker(self):
+        self.wfile.write(json.dumps({'port' : self.unused_uno_port}) + '\n')
+        answer = json.loads(self.rfile.readline().strip())
+        if answer['result'] == True:
+            self.task = tasks.createWorker()
+            self.unused_uno_port+= 1
+            return True
+        else:
+            return False
+
+def startServer():
+    try:
+        server = SocketServer.TCPServer(('localhost', 5555), SocketHandler)
+        server.serve_forever()
+    except socket.error, e:
+        if e.errno == 10048:
+            print 'Server allready running'
+        else:
+            raise
 
 def main():
+    server_thread = threading.Thread(target=startServer)
+    server_thread.start()
     try:
-        #server = HTTPServer(('', 80), MyHandler)
-        server = ThreadingHTTPServer(('', 80), MyHandler)
+        server = BaseHTTPServer.HTTPServer(('', 8080), MyHandler)
+        #server = ThreadingHTTPServer(('', 80), MyHandler)
         print 'started httpserver...'
         server.serve_forever()
     except KeyboardInterrupt:
         print '^C received, shutting down server'
         server.socket.close()
+    server_thread.join()
 
 if __name__ == '__main__':
-    main()
 
+    #import cProfile
+    #cProfile.run('main()', 'temp_profile')
+
+    #import pstats
+    #p = pstats.Stats('temp_profile')
+    #p.strip_dirs().sort_stats('cumulative').print_stats(50)
+
+    main()
