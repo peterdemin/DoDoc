@@ -132,7 +132,6 @@ class Parser(xml.sax.handler.ContentHandler):
         self.content+= text
 
     def parseIMAGE(self):
-        print 'parseIMAGE from', self.__class__
         path = self.content
         if os.path.exists(path):
             if os.path.splitext(path)[1].lower() == u'.odg':

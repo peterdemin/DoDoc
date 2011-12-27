@@ -121,7 +121,12 @@ if uno_connected:
         print 'Started'
         while(True):
             print 'Waiting for command'
-            command = json.loads(sock.recv(4096).strip())
+            try:
+                command = json.loads(sock.recv(4096).strip())
+            except socket.error, e:
+                if e.errno == 10054:
+                    print 'Server offline. Shutting down'
+                    break
             if command['op'] == 'odg2wmf':
                 odg2wmf(o.connection(), command['odg'])
                 sock.send(json.dumps({'result' : True}) + '\n')
@@ -131,6 +136,8 @@ if uno_connected:
             elif command['op'] == 'dodoc':
                 result = dodoc(command['template'], command['xml'], command['session'])
                 sock.send(json.dumps({'result' : result}) + '\n')
+            elif command['op'] == 'ping':
+                sock.send(json.dumps({'result' : 'pong'}) + '\n')
             else:
                 sock.send(json.dumps({'result' : False, 'reason' : 'Unrecognized op'}) + '\n')
                 print 'Unrecognized op:', command['op']

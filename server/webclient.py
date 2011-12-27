@@ -85,13 +85,14 @@ def main():
     datas = []
     for filename in filenames:
         datas.append(composeForm_data([], [('upfile', os.path.basename(filename), open(filename, 'rb').read())]))
-        print '.',
-    print
 
     session = {}
     for data in datas:
         cur_session = json.loads(postComposed(server_host + '/add/', data))
         session.update(cur_session)
+        print '.',
+        #return
+    print
     command = {'template' : 'TT.odt', 'xml' : 'koi_h_TT.xml'}
     result = json.loads(postForm_data(server_host + '/dodoc/', [('session', json.dumps(session)),
                                                                 ('command', json.dumps(command))],

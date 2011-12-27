@@ -29,6 +29,12 @@ class Tasks(object):
             self.workers.append(worker)
         return worker
 
+    def removeWorker(self, worker):
+        with self.workers_lock:
+            for i, w in enumerate(self.workers):
+                if w['event'] == worker['event']:
+                    self.workers.pop(i)
+
     def addTask(self, payload, callback = None):
         while(True):
             with self.workers_lock:
@@ -81,6 +87,7 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 return
             elif self.path.endswith(".odt"):
                 filepath = os.curdir + os.sep + self.path
+                self.waitWhile_exists(filepath + '.in-progress.lock')
                 filesize = os.stat(filepath).st_size
                 f = open(filepath, 'rb')
                 self.send_response(200)
@@ -101,6 +108,10 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             return
         except IOError:
             self.send_error(404,'File Not Found: %s' % self.path)
+
+    def waitWhile_exists(self, filename):
+        while(os.path.exists(filename)):
+            time.sleep(0.1)
 
     def sendText(self, text):
         self.send_response(200)
@@ -228,14 +239,41 @@ def getUnused_port():
 
 class SocketHandler(SocketServer.StreamRequestHandler):
     def handle(self):
-        print 'Worker connected:', self.client_address
+        #print 'Worker connected:', self.client_address
         if(self.setupWorker()):
             print 'Worker added:', self.client_address
             while(True):
                 payload = self.getTask()
-                self.wfile.write(payload + '\n')
-                result = self.rfile.readline().strip()
-                self.finishTask(result)
+                #print 'Got task:', self.client_address
+                if self.isWorker_online():
+                    #print 'Worker online:', self.client_address
+                    self.wfile.write(payload + '\n')
+                    result = self.rfile.readline().strip()
+                    self.finishTask(result)
+                else:
+                    #print 'Worker offline:', self.client_address
+                    tasks.removeWorker(self.task)
+                    if self.task.has_key('callback'):
+                        tasks.addTask(self.task['payload'], self.task['callback'])
+                    else:
+                        tasks.addTask(self.task['payload'])
+                    print 'Task returned to queue:', self.client_address
+                    break
+        print 'Worker offline:', self.client_address
+
+    def isWorker_online(self):
+        try:
+            self.wfile.write(json.dumps({'op' : 'ping'}) + '\n')
+            answer = json.loads(self.rfile.readline().strip())
+            if answer['result'] == u'pong':
+                return True
+        except socket.error, e:
+            if e.errno == 10054:
+                #print 'Worker offline.'
+                pass
+            else:
+                raise
+        return False
 
     def getTask(self):
         self.task['event'].acquire()

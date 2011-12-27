@@ -18,6 +18,12 @@ class Tasks(object):
             self.workers.append(worker)
         return worker
 
+    def removeWorker(self, worker):
+        with self.workers_lock:
+            for i, w in enumerate(self.workers):
+                if w['event'] == worker['event']:
+                    self.workers.pop(i)
+
     def addTask(self, payload, callback = None):
         while(True):
             with self.workers_lock:
@@ -43,9 +49,23 @@ class SocketHandler(SocketServer.StreamRequestHandler):
         self.setupWorker()
         while(True):
             payload = self.getTask()
-            self.wfile.write(payload + '\n')
-            result = self.rfile.readline().strip()
-            self.finishTask(result)
+            if self.isWorker_online():
+                self.wfile.write(payload + '\n')
+                result = self.rfile.readline().strip()
+                self.finishTask(result)
+            else:
+                tasks.removeWorker(task)
+                if self.task['callback']:
+                    tasks.addTask(self.task['payload'], self.task['callback'])
+                else:
+                    tasks.addTask(self.task['payload'])
+                break
+
+    def isWorker_online(self):
+        self.wfile.write(json.dumps({'op' : 'ping'}) + '\n')
+        answer = json.loads(self.rfile.read())
+        if answer['result'] == u'pong':
+            return True
 
     def getTask(self):
         self.task['event'].acquire()
