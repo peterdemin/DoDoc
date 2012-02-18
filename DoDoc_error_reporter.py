@@ -10,16 +10,16 @@ import DoDoc_inspector
 
 def reportError(text):
     me = u'"DoDoc developer" <deminpe@otd263> (deminpe@otd263)'
-    message = os.path.abspath(os.curdir)
+    message = os.path.abspath(os.curdir).decode('cp1251', 'replace')
     message+= u'\n\n'
 
-    src_diff = DoDoc_inspector.hashDiff(os.path.join(os.path.dirname(__file__), 'dodoc_hashes.pkl'))
+    src_diff = DoDoc_inspector.hashDiff(os.path.join(os.path.dirname(__file__), 'dodoc_hashes.json'))
     if len(src_diff):
         message+= u'ATTENTION: Source changed:\n'
         message+= src_diff
     message+= u'\n\n'
 
-    message+= u' '.join(sys.argv)
+    message+= u' '.join([a.decode('cp866', 'replace') for a in sys.argv])
     message+= u'\n\n'
 
     message+= text.decode('cp866', 'replace')

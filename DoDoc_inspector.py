@@ -1,22 +1,22 @@
 from hashlib import md5
 from glob import glob
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+import json
 
-def saveHashes(filename = 'dodoc_hashes.pkl'):
+ignored = [r'upload_to_ftp.py']
+
+def saveHashes(filename = 'dodoc_hashes.json'):
     hashes = {}
     for f in glob("*.py"):
-        hashes[f] = md5(open(f, "rb").read()).hexdigest()
-    pickle.dump(hashes, open(filename, 'wb'))
+        if f not in ignored:
+            hashes[f] = md5(open(f, "rb").read()).hexdigest()
+    json.dump(hashes, open(filename, 'wb'), sort_keys=True, indent=4)
 
-def hashDiff(filename = 'dodoc_hashes.pkl'):
+def hashDiff(filename = 'dodoc_hashes.json'):
     import os
     diff = []
     if os.path.exists(filename):
         work_dir = os.path.dirname(__file__)
-        hashes = pickle.load(open(filename, 'rb'))
+        hashes = json.load(open(filename, 'rb'))
         for f, hash in hashes.iteritems():
             filepath = os.path.join(work_dir, f)
             if os.path.exists(filepath):
