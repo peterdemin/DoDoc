@@ -6,7 +6,20 @@ import os
 import xml.sax
 from pprint import pprint
 
+def parseParameters_XML(xml_content):
+    """
+    Function parsers xml_content to generate inner data structure for filling template.
+    """
+    p = Parser()
+    xml.sax.parseString(xml_content, p)
+    return expandImages_in_tables(p.tree)
+    return p.tree
+
 class Parser(xml.sax.handler.ContentHandler):
+    """
+    Input XML parser.
+    Result is in self.tree dict.
+    """
     tag_csv   = u'ROWS_FROM_CSV'
     tag_cdr   = u'ROWS_FROM_CDR'
     tag_row   = u'ROW'
@@ -232,12 +245,6 @@ def readFile(filename, forced_encoding = None):
         else:
             return content
     raise UnicodeDecodeError
-
-def parseParameters_XML(xml_content):
-    p = Parser()
-    xml.sax.parseString(xml_content, p)
-    return expandImages_in_tables(p.tree)
-    return p.tree
 
 def is_table(value):
     if type(value) == list:

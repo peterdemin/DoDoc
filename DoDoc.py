@@ -21,9 +21,25 @@ from Template import Template
 from DoDoc_parameters_parser import parseParameters_XML
 
 def basefilename(path):
+    """Returns name part of filename in given path"""
     return os.path.splitext(os.path.basename(path))[0]
 
 def renderTemplate(template_path, template_parameters, result_path):
+    """
+    Renders template with given data.
+    template_path       - Path to template .odt file;
+    template_parameters - Parsed data to fill the template;
+    result_path         - Path to result .odt file
+    Term "render" means creating new document by filling template with data.
+    Function perfoms following steps:
+    1) Extract content of template to temporary directory;
+    2) Render file styles.xml;
+    3) Render file content.xml;
+    4) Copy used pictures to "Pictures" directory;
+    5) Remove unused pictures from "Pictures" directory;
+    6) Update "META-INF/manifest.xml" with new pictures;
+    7) Pack temporary directory to result_path.
+    """
     temp_dir = basefilename(result_path)
     extractAll(template_path, temp_dir)
 
@@ -94,6 +110,16 @@ def cleanPictures(odt_path, to_delete):
                 pass
 
 def DoDoc(template_path, xml_path, result_path):
+    """
+    Main function.
+    template_path       - Path to template .odt file;
+    xml_path            - Path to .xml with data to fill the template;
+    result_path         - Path to result .odt file.
+    Function calls DoDoc_parameters_parser.parseParameters_XML() to parse
+    input data from xml_path.
+    Then calls renderTemplate() to generate output file at result_path.
+    """
+
     try:
         open(result_path, "ab").close()
     except IOError, e:

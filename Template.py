@@ -14,26 +14,11 @@ TAG_SECTION = u'text:section'
 SECTION_NAME = u'text:name'
 TAG_PARAGRAPH = u'text:p'
 
-def setAttributes(doc, node, attributes):
-    if attributes:
-        for k, v in attributes.items():
-            node.setAttribute(k, v)
-
-
-def iterNode(doc, node, callback):
-    if node.nodeType == node.TEXT_NODE:
-        #print '=-=-=-=-=-=-', node.data
-        callback.characters(node.data)
-    else:
-        #print 'iterNode', node.tagName
-        callback.startElement(node.tagName, node.attributes)
-        if node.hasChildNodes():
-            for child in node.childNodes:
-                iterNode(doc, child, callback)
-        callback.endElement(node.tagName)
-
-
 class Template(object):
+    """
+    Class stores template xml content and template parameters,
+    and deletegates rendering to Template_handler class.
+    """
     def __init__(self, xml_content, params):
         self.xml_content = xml_content
         self.params = params or {}
@@ -53,7 +38,12 @@ class Template(object):
     def imageUrls(self):
         return self.image_urls
 
+
 class Template_handler(xml.sax.handler.ContentHandler):
+    """
+    Class goes throw template xml by calling methods startElement(), endElement() and characters().
+    When encounter special tags, it delegates work to appropriate TagHandler descendant.
+    """
     def __init__(self, params = None):
         self.params = params or {}
         self.doc = xml.dom.minidom.Document()
@@ -88,7 +78,7 @@ class Template_handler(xml.sax.handler.ContentHandler):
             else:
                 self.node = self.doc.createElement(name)
                 self.doc.appendChild(self.node)
-            setAttributes(self.doc, self.node, attrs)
+            setAttributes(self.node, attrs)
 
     def endElement(self, name):
         #print 'END', self.node
@@ -176,7 +166,7 @@ class Tag_handler(object):
             self.doc.appendChild(self.node)
         else:
             self.node = self.node.appendChild(self.doc.createElement(name))
-        setAttributes(self.doc, self.node, attrs)
+        setAttributes(self.node, attrs)
 
     def endElement(self, name):
         self.node = self.node.parentNode
@@ -279,7 +269,7 @@ class Image_handler(Tag_handler):
                 self.doc.appendChild(self.node)
             else:
                 cur_node = self.doc.createElement(name)
-                setAttributes(self.doc, cur_node, attrs)
+                setAttributes(cur_node, attrs)
                 self.initialize(cur_node)
                 #print self.doc.toprettyxml()
                 #self.startElement(name, attrs)
@@ -294,7 +284,7 @@ class Image_handler(Tag_handler):
                 self.marker_xlink = attrs['xlink:href']
             else:
                 self.marker_xlink = attrs['xlink:href'].nodeValue
-        setAttributes(self.doc, self.node, attrs)
+        setAttributes(self.node, attrs)
 
     def endElement(self, name):
         if self.moving_up:
@@ -368,6 +358,10 @@ class Condition_block_handler(Tag_handler):
         return root
 
 class Parameters_finder(object):
+    """
+    Class behaves like xml.sax.handler.ContentHandler and stores encountered markers in self.parameters set.
+    """
+
     re_param = re.compile(ur'(?iu)\{([a-z0-9\._]+)\}')
 
     def __init__(self, doc = None):
@@ -390,6 +384,12 @@ class Parameters_finder(object):
 
 
 class Replacer(object):
+    """
+    Class behaves like xml.sax.handler.ContentHandler.
+    While moving through input XML, it creates output XML tree, having all markers replaced with parameters.
+    Also it does special treatment for "#BR#", "\t" and "-" (hyphen).
+    """
+
     re_param = re.compile(ur'(?iu)\{([a-z0-9\._]+)\}')
     BREAK_LINE = u'##LINE-BREAK-IN-REPLACEMENT##'
     TAB = '\t'
@@ -419,22 +419,10 @@ class Replacer(object):
                     rattrs[key] = self.adict[key]
                 else:
                     rattrs[key] = value
-        setAttributes(self.doc, self.node, rattrs)
+        setAttributes(self.node, rattrs)
 
     def endElement(self, name):
         self.node = self.node.parentNode
-
-    def replacement(self, matched):
-        key = matched.group(1)
-        if self.rdict.has_key(key):
-            self.something_replaced = True
-            value = self.rdict[key]
-            value = self.re_hyphen.sub(self.nobr_hyphen, value)
-            lines = [a.strip() for a in value.split('#BR#')]
-            content = self.BREAK_LINE.join(lines)
-            return unicode(content)
-        else:
-            return matched.group(0)
 
     def characters(self, content):
         #print '>>>', content
@@ -458,6 +446,49 @@ class Replacer(object):
                 else:
                     text_node = self.doc.createTextNode(part)
                     self.node.appendChild(text_node)
+
+    def replacement(self, matched):
+        key = matched.group(1)
+        if self.rdict.has_key(key):
+            self.something_replaced = True
+            value = self.rdict[key]
+            value = self.re_hyphen.sub(self.nobr_hyphen, value)
+            lines = [a.strip() for a in value.split('#BR#')]
+            content = self.BREAK_LINE.join(lines)
+            return unicode(content)
+        else:
+            return matched.group(0)
+
+
+def setAttributes(node, attributes):
+    """
+    Function sets given attributes to given node.
+    """
+    if attributes:
+        for k, v in attributes.items():
+            node.setAttribute(k, v)
+
+def iterNode(doc, node, callback):
+    """
+    Function iterates through given node with it childs, calling callback class methods on every event.
+    doc     - xml.dom.Document object;
+    node    - xml.dom.Node object;
+    callback - object with following methods defined:
+        startElement(name, attrs);
+        endElement(name);
+        characters(text).
+    """
+    if node.nodeType == node.TEXT_NODE:
+        #print '=-=-=-=-=-=-', node.data
+        callback.characters(node.data)
+    else:
+        #print 'iterNode', node.tagName
+        callback.startElement(node.tagName, node.attributes)
+        if node.hasChildNodes():
+            for child in node.childNodes:
+                iterNode(doc, child, callback)
+        callback.endElement(node.tagName)
+
 
 def testTable():
     source = u'<xml><table:table><table:table-row>\
