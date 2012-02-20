@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 encoding='utf8'
 
-VERSION = '2.4.2'
+VERSION = '2.5.0'
 
 import os
 import sys
@@ -43,7 +43,7 @@ def renderTemplate(template_path, template_parameters, result_path):
     for key in image_replacements.iterkeys():
         value = image_replacements[key]
         for flow_chart_path in value:
-            dest_path = os.path.join(temp_dir, flow_chart_path)
+            dest_path = os.path.join(temp_dir, 'Pictures', os.path.basename(flow_chart_path))
             shutil.copy2(flow_chart_path, dest_path)
     replaceManifest(temp_dir, image_replacements)
     cleanPictures(temp_dir, image_replacements.keys())
@@ -70,8 +70,9 @@ def replaceManifest(dest_dir, image_replacements):
             if image_replacements.has_key(source_image):
                 #print '-', source_image
                 for dest_image in image_replacements[source_image]:
+                    local_path = '/'.join(['Pictures', os.path.basename(dest_image)])
                     ext = os.path.splitext(dest_image)[1][1:]
-                    result.append(image_pattern % {'path' : dest_image, 'ext' : ext})
+                    result.append(image_pattern % {'path' : local_path, 'ext' : ext})
                     #print '+', dest_image
             else:
                 result.append(line)

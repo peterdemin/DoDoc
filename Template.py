@@ -1,3 +1,4 @@
+import os
 import re
 import xml.sax
 import xml.dom.minidom
@@ -316,7 +317,8 @@ class Image_handler(Tag_handler):
                 assert( type(images) in (list, tuple) )
                 inserted_xlinks = []
                 for image in images:
-                    attr_dict = {u'draw:name' : image, u'xlink:href' : image}
+                    image_path = '/'.join(['Pictures', os.path.basename(image)])
+                    attr_dict = {u'draw:name' : image_path, u'xlink:href' : image_path}
                     r = Replacer(self.params, attr_dict)
                     iterNode(self.doc, self.doc.firstChild, r)
                     render_root.appendChild(r.doc.firstChild)
