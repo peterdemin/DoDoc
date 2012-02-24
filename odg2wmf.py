@@ -11,7 +11,7 @@ class Odg2wmf(OpenOffice):
         (noext, ext) = os.path.splitext(filename)
         created_files = []
         for page_id in range(pages_amount):
-            cur_output_filename = self.composeOO_name(u'%s_%d%s' % (noext, page_id, ext))
+            cur_output_filename = self.composeOO_name(u'%s_%02d%s' % (noext, page_id+1, ext))
             doc_controller.setCurrentPage(draw_pages.getByIndex(page_id))
             if self.saveCurrent_page(cur_output_filename):
                 created_files.append(cur_output_filename)
@@ -33,6 +33,7 @@ class Odg2wmf(OpenOffice):
             return False
 
     def composeOO_name(self, file_path):
+        return file_path
         import hashlib
         dirname = os.path.dirname(file_path)
         if(len(dirname)):

@@ -27,14 +27,26 @@ class OpenOffice(object):
         self.connected_context = None
         self.service_started_by_me = False
 
-    def connect(self):
+    def setConnection(self, connected_context):
+        self.connected_context = connected_context
+        unosvcmgr = self.connected_context.ServiceManager
+        self.desktop    = unosvcmgr.createInstanceWithContext('com.sun.star.frame.Desktop',         self.connected_context)
+        self.dispatcher = unosvcmgr.createInstanceWithContext('com.sun.star.frame.DispatchHelper',  self.connected_context)
+
+    def connection(self):
+        return self.connected_context
+
+    def connect(self, port=2002):
         start_attempted = False
         connection_attempts = 0
-        while not self.connected_context:
+        connected_context = None
+        while not connected_context:
             try:
                 progress('Attempting to connect...')
                 connection_attempts+= 1
-                self.connected_context = self.resolveURL('uno:socket,host=localhost,port=2002;urp;StarOffice.ComponentContext')
+                url = 'uno:socket,host=localhost,port=%d;urp;StarOffice.ComponentContext' % (port)
+                progress('Resolve "%s"' % (url))
+                connected_context = self.resolveURL(url)
                 progress('Connected.')
             except NoConnectException, e:
                 progress('Connection failed.')
@@ -47,13 +59,11 @@ class OpenOffice(object):
                         error('soffice service started, but connection could not be made.')
                 else:
                     progress('Starting service...')
-                    if self.startService():
+                    if self.startService(port):
                         start_attempted = True
                     else:
                         return False
-        unosvcmgr = self.connected_context.ServiceManager
-        self.desktop    = unosvcmgr.createInstanceWithContext('com.sun.star.frame.Desktop',         self.connected_context)
-        self.dispatcher = unosvcmgr.createInstanceWithContext('com.sun.star.frame.DispatchHelper',  self.connected_context)
+        self.setConnection(connected_context)
         return True
 
     def disconnect(self):
@@ -82,10 +92,12 @@ class OpenOffice(object):
         progress('Disposed document.')
         pass
 
-    def startService(self):
+    def startService(self, port):
         import subprocess
         try:
-            soffice = subprocess.Popen(["soffice", "-headless", "-nofirststartwizard", "-accept=socket,host=localhost,port=2002;urp;"])
+            popen_arg = ['soffice', '-headless', '-nofirststartwizard', '-accept="socket,host=localhost,port=%d;urp;"' % (port)]
+            progress('Start "%s"' % (popen_arg))
+            soffice = subprocess.Popen(popen_arg)
             if None == soffice.poll():
                 self.service_started_by_me = True
                 progress('Service polled ok')
@@ -106,7 +118,7 @@ class OpenOffice(object):
             progress('soffice termination failed.')
 
     def resolveURL(self, url):
-        return self.url_resolver.resolve('uno:socket,host=localhost,port=2002;urp;StarOffice.ComponentContext')
+        return self.url_resolver.resolve(url)
 
 class InputStream(XSeekable, XInputStream, unohelper.Base):
       def __init__(self, seq):
